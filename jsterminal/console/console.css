@@ -1,0 +1,180 @@
+/* 
+html5doctor.com Reset Stylesheet
+v1.6.1
+Last Updated: 2010-09-17
+Author: Richard Clark - http://richclarkdesign.com 
+Twitter: @rich_clark
+*/
+html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,b,i,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,figcaption,figure, footer,header,hgroup,menu,nav,section,summary,time,mark,audio,video {
+    margin:0; padding:0; border:0; font-size:100%; vertical-align:baseline; background:transparent; }
+    
+    
+body { line-height:1; }
+
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section { 
+    display:block; }
+
+nav ul { list-style:none; }
+
+blockquote,q { quotes:none; }
+
+blockquote:before,blockquote:after,q:before,q:after {
+    content:''; content:none; }
+
+a { margin:0; padding:0; font-size:100%; vertical-align:baseline; background:transparent; }
+
+/* change colours to suit your needs */
+ins { background-color:#000; color:#fff; text-decoration:none; }
+
+/* change colours to suit your needs */
+mark { background-color:#ff9;  color:#000; font-style:italic; font-weight:bold; }
+
+del { text-decoration: line-through;}
+
+abbr[title],dfn[title] { border-bottom:1px dotted; cursor:help;}
+
+table { border-collapse:collapse; border-spacing:0; }
+
+/* change border colour to suit your needs */
+hr { display:block; height:1px; border:0; border-top:1px solid #cccccc; margin:1em 0; padding:0; }
+
+input,select { vertical-align:middle;}
+
+
+/* the real styles: */
+
+body {
+  padding: 0; margin: 0;
+  background-color: #000;
+}
+
+#console {      
+  position:relative;
+  overflow: hidden; 
+
+  font-family: monospace, Courier;
+  font-size: 10pt;
+  line-height: 14pt;
+  background: #000;    
+  color: #fff;
+}
+
+#console > section {
+  display: block;
+  padding: 35px 20px 0;
+}
+
+#console > section.page {
+  white-space: pre-wrap;
+}
+#console > section.page h2 {
+  margin: 0; padding: 0; display: inline;
+}
+
+#console > section.page a {
+  color: #fff;
+  text-decoration: none;
+}
+#console > section.page a:hover {
+  text-decoration: underline;
+}
+
+#console > header {
+  background: #555;
+  display: block;
+  overflow: hidden;
+  position: fixed;
+  left: 0; right: 0;
+  top:0;
+  height: 25px;
+  box-shadow: 3px 3px rgba(0 0 0 0.3);
+}
+
+#console > header h1 {
+  float: right;
+  padding: 0.3em 1em;
+}
+
+    #console > header menu {
+      padding: 0.2em 0.5em;
+      margin: 0;
+    }
+    
+    #console > header menu button {
+      font-family: monospace, Courier;
+      background: none;
+      border: 0px;
+      color: #fff;
+      padding: 0.4em 0.3em 0.2em; margin: 0 0.4em;
+      font-size: 9pt;
+    }
+
+#console-out output {
+  display: block;
+}
+    
+    #console-out > kbd { white-space: pre-line; }
+    #console-out > kbd::after { content: "\a"; }
+    
+    #console-out .error {}
+    
+    #console-out .error strong { color: #ee3300; }
+
+#console-in { border-top: 2px solid #aaa; } 
+    
+    #console-in textarea {
+      width: 99%; height: 100%;
+      padding: 0 0.5%; margin: 0;
+      font-family: monospace, Courier;
+      background: #000;    
+      color: #fff;
+      border: 0px;
+      font-size: 10pt;
+    }
+
+
+/* editor mode */
+
+.editor #console-out {
+  /*top: 25px; bottom: auto;
+  height: 25px;*/
+  height: 50px;
+}
+
+.editor #console-in {
+  /*height: auto;
+  top: 65px; bottom: 0px;*/
+  height: 250px;
+  border: 1px solid #ccc;
+}
+
+/* Form replacement TODO */
+#console label:focus {
+  font-weight: bold;
+}
+
+#page-settings .flash {
+  font-weight: bold; 
+  color: #66ff22;
+}
+
+#page-settings #settings_environment {
+  width: 100%;
+  height: 20em;
+  color: #fff;
+  background: #000;
+  border: 1px solid #ccc;
+}
+
+#page-settings button {
+  margin: 1em 0; padding: 0;  
+  font-family: monospace, Courier;
+  color: #fff;
+  background: none;
+  border: 0px;
+}
+#page-settings button:hover span {
+  text-decoration: underline;
+}
+#page-settings button::before { content: '[ '; }
+#page-settings button::after { content: ' ]'; }
