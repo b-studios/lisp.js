@@ -165,14 +165,12 @@ var Interpreter = (function() {
       return Eval(body, let_env);    
     },
     
-    // ich brauche einen eigenen Datentyp LISP.Lambda, welcher auch das
-    // defined_in environment speichert
     "lambda": function(list, env) {
       
       var args = list.first(),
           body = list.second();
-     
-      //return new LISP.Pair(new LISP.Symbol("lambda"), list);    
+      
+      // third argument is the defined_in environment
       return new LISP.Lambda(args, body, env);
     },
 
