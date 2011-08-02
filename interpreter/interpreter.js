@@ -7,45 +7,6 @@ var Interpreter = (function() {
 
   // console for outputting builtin print-function
   var print_console = window.console;
-
-  var Environment = function(parent) {
-    
-    var store = {};
-    
-    var env = {
-      // get binding
-      get: function(key) {
-        if(store.hasOwnProperty(key)) {
-          return store[key];
-        } else if(parent != null) {
-          return parent.get(key);
-        }
-      },
-      
-      // set binding
-      set: function(key_or_object, value) {      
-        if(arguments.length == 1) {
-          for(key in key_or_object) {
-            if(key_or_object.hasOwnProperty(key))
-              store[key] = key_or_object[key];    
-          }
-        } else {    
-          store[key_or_object] = value;
-        }
-        
-        return env;
-      },
-      
-      defined: function(key) {
-        return store.hasOwnProperty(key)      
-      },
-      
-      bindings: store,
-      'super': parent
-    };
-    
-    return env;
-  };
   
   var BuiltIns = {
     
@@ -118,7 +79,7 @@ var Interpreter = (function() {
     },
     
     "not": function(list, env) {
-      //return !Eval(list.first()).value
+      return new LISP.Boolean(!Eval(list.first(), env).value);
     },    
     
     "define": function(list, env) {
@@ -136,6 +97,9 @@ var Interpreter = (function() {
       var first = list.first(),
           second = list.second();
       
+      // ERROR: Fehlt irgendwie
+      // Muss das entsprechende Binding aus der Chain suchen und danach den wert
+      // setzen
       set_r(first.value, second, env);
       return second;
     },
@@ -145,7 +109,7 @@ var Interpreter = (function() {
       var args = list.first(),
           body = list.second();
       
-      var let_env = new Environment(env);
+      var let_env = new LISP.Environment(env);
     
       var bind_args = function(pairs) {
         
@@ -277,7 +241,7 @@ var Interpreter = (function() {
     */
     
     // call_args mit env evaluieren, lambda mit defined_env evaluieren  
-    var lambda_env = new Environment(lambda.defined_env);
+    var lambda_env = new LISP.Environment(lambda.defined_env);
     
     var bind_args = function(symbols, values) {
         if(values instanceof LISP.Pair) {
@@ -340,7 +304,7 @@ var Interpreter = (function() {
   
   
   // Init Environment
-  var __GLOBAL__ = Environment(null).set(BuiltIns);
+  var __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
 
   var self = {
     
