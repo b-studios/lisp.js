@@ -60,7 +60,7 @@ LISP.Lambda = function(args, body, defined_env) {
   this.body = body;
   this.defined_env = defined_env;
   
-  this.to_s = function() { return "<userdefined lambda>" };
+  this.to_s = function() { return "<userdefined function>" };
 };
 
 /**
@@ -117,17 +117,18 @@ LISP.Environment = function(parent) {
   return env;
 };
 
-LISP.Continuation = function(env, calling_cont) {
+
+LISP.Continuation = function(list, env, cont) {
   
-  var cont = function() {
-    console.log("Evaluating Continuation");
-  };
-  
-  cont.next         = null;
-  cont.return_val   = null;
-  cont.caller       = calling_cont;
-  cont.locals       = new LISP.Environment(env);
-  cont.to_s         = function() { return "<continuation>" }   
+  cont.env             = env;
+  cont.to_s            = function() { return "<continuation>" };
+  cont.is_continuation = true;
+  cont.list            = list;
+  cont.inspect         = function() { return {
+    env: env, 
+    cont: cont,
+    list: list  
+  }};
   
   return cont;
 }
@@ -137,3 +138,10 @@ LISP.true = new LISP.Boolean(true);
 LISP.false = new LISP.Boolean(false);
 
 LISP.nil= new LISP.Nil();
+
+LISP.compare = function(a,b) {
+  if(a instanceof LISP.Pair && b instanceof LISP.Pair)
+    return LISP.compare(a.first(), b.first()) && LISP.compare(a.rest(), b.rest());
+  else 
+    return a.value == b.value;
+}
