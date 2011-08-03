@@ -2,6 +2,8 @@
  * @object Interpreter
  * @requires LISP all datatypes for this interpreter
  * @requires Parser the Lisp-Parser
+ *
+ * @todo Comments, Macros, Assert, Tests
  */
 var Interpreter = (function() {
 

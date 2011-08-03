@@ -26,13 +26,20 @@ var Parser = function(string) {
     
     if(scanner.peekEquals('('))
       return readList();
-      
+   
+    if(scanner.peekEquals(";"))
+      return skipComment();
+    
     else return readAtom();
   }
       
   
   // @private helper functions
-
+  function skipComment() {
+    scanner.until("\n");
+    return read();
+  }
+  
   // stimmt noch nicht ganz!!!
   function readQuoted() {
     // Werden Listen mit Quote nicht auch gequoted?? So wie '(list . foo)
