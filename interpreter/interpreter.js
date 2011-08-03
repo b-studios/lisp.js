@@ -64,8 +64,7 @@ var Interpreter = (function() {
       return cont(LISP.nil);
     },
     
-    "+": function(list, cont) {   
-      console.log("called builtin +"); 
+    "+": function(list, cont) {
       return Calculate(list, cont, function(a,b) { return a+b; });
     },
     
@@ -117,10 +116,8 @@ var Interpreter = (function() {
 
     "eq?": function(list, cont) {
                 
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {    ///////////////////////////////////////////////////// 1
-        return LISP.Continuation(list.second(), cont.env, function(second_arg) {  
-        
-          console.log("eq?", first_arg, second_arg);
+      return LISP.Continuation(list.first(), cont.env, function(first_arg) { 
+        return LISP.Continuation(list.second(), cont.env, function(second_arg) { 
           return cont(LISP.compare(first_arg, second_arg) ? LISP.true : LISP.false);         
           
         });        
@@ -149,12 +146,17 @@ var Interpreter = (function() {
       return LispCompare(list, function(a,b) {
         return a <= b;
       }, cont);  
-    },
+    },   
     
+    "lambda": function(list, cont) {
+      
+      var args = list.first(),
+          body = list.second();
+          
+      return cont(new LISP.Lambda(args, body, cont.env));
+    },
 
     // <------------- Bis hier in CPS umgewandelt
-    
-        
     
     // setzt erstes argument im aktuellen binding auf den wert des zweiten arguments
     // liefert dann den Wert des zweiten Arguments zurück
@@ -194,16 +196,6 @@ var Interpreter = (function() {
       
       return Eval(body, let_env);    
     },
-    
-    "lambda": function(list, env) {
-      
-      var args = list.first(),
-          body = list.second();
-      
-      // third argument is the defined_in environment
-      return new LISP.Lambda(args, body, env);
-    },
-
 
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
     // return wert  
@@ -243,16 +235,11 @@ var Interpreter = (function() {
   // Evaluates both arguments and afterwards applies op
   function Calculate(list, cont, op) {
     
-    console.log("Calculate", cont, op);
-    
     // Evaluate first and second argument
     return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-      console.log("Evaled calulates first arg to", first_arg);
       return LISP.Continuation(list.second(), cont.env, function(second_arg) {
        
       var result = op(first_arg.value, second_arg.value);
-      
-      console.log("calculating", first_arg.value, second_arg.value);
       
       if(typeof result == "string")
         return cont(new LISP.String(result));
@@ -266,7 +253,7 @@ var Interpreter = (function() {
     });
   }
   
-  function Eval_Lambda(lambda, call_args, env) {
+  function Eval_Lambda(lambda, call_args, cont) {
 
     /*
       - args
@@ -281,21 +268,30 @@ var Interpreter = (function() {
     // call_args mit env evaluieren, lambda mit defined_env evaluieren  
     var lambda_env = new LISP.Environment(lambda.defined_env);
     
-    var bind_args = function(symbols, values) {
-        if(values instanceof LISP.Pair) {
-          // resolve values with env
-          lambda_env.set(symbols.first().value, Eval(values.first(), env));
-          bind_args(symbols.rest(), values.rest());
-        } else {
-          // varargs??
-        }
-    };
+    // eval args - use closure to process list of args
+    var lambda_args = lambda.args;
     
-    if(window.console != undefined) console.log(lambda_env);
+    var bind_args = function() {
     
-    bind_args(lambda.args, call_args);
+      // Create a Continuation, which can used to bind the first evaled value to
+      // the first symbol of lambda's argument list
+      return LISP.Continuation(call_args.first(), cont.env, function(value) {
+        lambda_env.set(lambda_args.first().value, value);
+        
+        lambda_args = lambda_args.rest();
+        call_args = call_args.rest();
+        
+        // there are still some more args to eval
+        if(call_args instanceof LISP.Pair)
+          return bind_args();
+          
+        else
+          return LISP.Continuation(lambda.body, lambda_env, cont);
+      });
+    }
     
-    return Eval(lambda.body, lambda_env);  
+    // start binding args
+    return bind_args();
   }
   
   
@@ -328,8 +324,8 @@ var Interpreter = (function() {
         //console.log("inside of eval", function_slot, rest_list);
         
         // oh there is a lambda-definition in function_slot
-        //if(function_slot instanceof LISP.Lambda) 
-        //  return Eval_Lambda(function_slot, rest_list, cont);
+        if(function_slot instanceof LISP.Lambda) 
+          return Eval_Lambda(function_slot, rest_list, cont);
         
         // seems to be a builtin function
         if(function_slot instanceof Function)
@@ -356,7 +352,7 @@ var Interpreter = (function() {
     var cont = LISP.Continuation(list, __GLOBAL__, function(results) { return results; });
        
     while(typeof cont == "function" && !!cont.is_continuation) {
-      console.log(cont.inspect());
+      // console.log(cont.inspect());
       //var evaled = Eval(cont.list, cont);
       
       //console.log("Evaluiert:", evaled);
