@@ -155,61 +155,58 @@ var Interpreter = (function() {
           
       return cont(new LISP.Lambda(args, body, cont.env));
     },
-
-    // <------------- Bis hier in CPS umgewandelt
     
     // setzt erstes argument im aktuellen binding auf den wert des zweiten arguments
     // liefert dann den Wert des zweiten Arguments zurück
-    "set!": function(list, env) {
+    "set!": function(list, cont) {
     
-      var first = list.first(),
-          second = list.second();
-      
-      // ERROR: Fehlt irgendwie
-      // Muss das entsprechende Binding aus der Chain suchen und danach den wert
-      // setzen
-      set_r(first.value, second, env);
-      return second;
+      // evaluate second argument
+      return LISP.Continuation(list.second(), cont.env, function(second_arg) {
+        cont.env.set_r(list.first().value, second_arg);
+        return cont(second_arg);
+      });
     },
     
-    "let": function(list, env) {
+    "let": function(list, cont) {
     
       var args = list.first(),
           body = list.second();
-      
-      var let_env = new LISP.Environment(env);
-    
-      var bind_args = function(pairs) {
+            
+      return (function bind(args, bind_env) {
         
-          if(pairs == LISP.nil) return;
-                
-          var arg_pair = pairs.first();
+        var kv_pair = args.first();
+        
+        return LISP.Continuation(kv_pair.second(), cont.env, function(value) {
       
-          if(arg_pair instanceof LISP.Pair) {
-            // resolve values with env
-            let_env.set(arg_pair.first().value, Eval(arg_pair.second(), env));
-            bind_args(pairs.rest());
-          }
-      };
-      
-      bind_args(args);
-      
-      return Eval(body, let_env);    
+          bind_env.set(kv_pair.first().value, value);
+          
+          rest_pairs = args.rest();
+          
+          // there are still some more args to eval
+          if(rest_pairs instanceof LISP.Pair)
+            return bind(rest_pairs, bind_env);
+            
+          else
+            return LISP.Continuation(body, bind_env, cont);
+                      
+        });
+      })(args, new LISP.Environment(cont.env));
     },
-
+  
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
     // return wert  
-    "begin": function(list, env) {
-      
-      var eval_list = function(list) {
-        if(list.rest() == LISP.nil)
-          return Eval(list.first(), env);
-        else {
-          Eval(list.first(), env);
-          return eval_list(list.rest());
-        }        
-      };    
-      return eval_list(list);    
+    "begin": function(list, cont) {    
+      return (function eval_lines(lines) {        
+        return LISP.Continuation(lines.first(), cont.env, function(value) {
+          
+          var rest_lines = lines.rest();
+          
+          if(rest_lines instanceof LISP.Pair)
+            return eval_lines(rest_lines);
+            
+          else return cont(value);      
+        });
+      })(list);
     }
   };
 
@@ -253,6 +250,27 @@ var Interpreter = (function() {
     });
   }
   
+  
+  function BindArgs(key_args, value_args, bind_env, eval_env, cont) {
+    
+    // Create a Continuation, which can used to bind the first evaled value to
+    // the first symbol of lambda's argument list
+    return LISP.Continuation(value_args.first(), eval_env, function(value) {
+  
+      bind_env.set(key_args.first().value, value);
+              
+      key_rest = key_args.rest();
+      value_rest = value_args.rest();
+      
+      // there are still some more args to eval
+      if(key_rest instanceof LISP.Pair && value_args instanceof LISP.Pair)
+        return BindArgs(key_rest, value_rest, bind_env, eval_env, cont);
+        
+      else
+        return cont(bind_env);
+    });
+  }
+  
   function Eval_Lambda(lambda, call_args, cont) {
 
     /*
@@ -267,31 +285,10 @@ var Interpreter = (function() {
     
     // call_args mit env evaluieren, lambda mit defined_env evaluieren  
     var lambda_env = new LISP.Environment(lambda.defined_env);
-    
-    // eval args - use closure to process list of args
-    var lambda_args = lambda.args;
-    
-    var bind_args = function() {
-    
-      // Create a Continuation, which can used to bind the first evaled value to
-      // the first symbol of lambda's argument list
-      return LISP.Continuation(call_args.first(), cont.env, function(value) {
-        lambda_env.set(lambda_args.first().value, value);
-        
-        lambda_args = lambda_args.rest();
-        call_args = call_args.rest();
-        
-        // there are still some more args to eval
-        if(call_args instanceof LISP.Pair)
-          return bind_args();
-          
-        else
-          return LISP.Continuation(lambda.body, lambda_env, cont);
-      });
-    }
-    
-    // start binding args
-    return bind_args();
+            
+    return BindArgs(lambda.args, call_args, lambda_env, cont.env, function(bindings) {
+      return LISP.Continuation(lambda.body, bindings, cont);
+    });
   }
   
   

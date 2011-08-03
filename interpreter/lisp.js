@@ -106,6 +106,19 @@ LISP.Environment = function(parent) {
       return env;
     },
     
+    set_r: function(key, value) {
+      if(!!store.hasOwnProperty(key))
+        store[key] = value;
+        
+      else if(!!parent)
+        parent.set_r(key, value);
+        
+      else
+        throw key + " is not defined, and cannot be set to " + value;
+        
+      return env;
+    },
+    
     defined: function(key) {
       return store.hasOwnProperty(key)      
     },
