@@ -165,4 +165,31 @@
     test_interpreter("(defined? 'foo)", "false");
     test_interpreter("(eval (defined? 'foo) somebinding)", "true");
   });
+  
+  /**
+  
+    First test:
+   (define foo nil)   
+   (define return nil)
+   (let ((val (call/cc 
+       (lambda (cont) 
+         (set! return cont)            
+         1)
+        ))) 
+     (begin
+       (set! foo (* val 2))
+       (+ val 1)
+   ))   
+     
+     (set! foo                 
+   (return 22)
+       */
+  test("call/cc", function() {
+    Interpreter.do("(define return nil)");
+    Interpreter.do("(define foo nil)");
+    test_interpreter("(let ((val (call/cc (lambda (cont) (set! return cont) 1)))) (begin (set! foo (* val 2)) (+ val 1)))", "2");
+    test_interpreter("foo", "2");
+    test_interpreter("(return 5)", "6");
+    test_interpreter("foo", "10");    
+  });
 })();
