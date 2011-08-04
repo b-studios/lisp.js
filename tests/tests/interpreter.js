@@ -98,9 +98,27 @@
     test_interpreter("(not false)", "true");
   });
   
+  test("Define", function() {
+    Interpreter.do("(define foo 3)");
+    test_interpreter("foo", 3);
+    
+    Interpreter.do("(define bar (lambda (n) (+ n 1)))");
+    test_interpreter("(bar 4)", 5);
+    
+    Interpreter.do("(define (baz n) (+ n 1))");
+    test_interpreter("(baz 4)", 5);
+    
+    // multiple commands (like begin)
+    Interpreter.do("(define (bam n) (set! n (+ n 1)) (set! n (* n 2)) n)");
+    test_interpreter("(bam 4)", 10);
+  });
+  
   test("Lambdas", function() {
     test_interpreter("((lambda (n) (* n 2)) 5)", "10");
     test_interpreter("((lambda (n m) (* n m)) 5 6)", "30");
+    
+    // multiple commands (like begin)
+    test_interpreter("((lambda (n) (set! n (+ n 1)) (set! n (* n 2)) n) 4)", 10);
   });
   
   test("let", function() {
@@ -191,5 +209,23 @@
     test_interpreter("foo", "2");
     test_interpreter("(return 5)", "6");
     test_interpreter("foo", "10");    
+  });
+  
+  test("Tail call optimization", function() {
+    Interpreter.do("(define (count-define n) (if (le? n 0) 0 (count-define (- n 1))))");
+    // should exceed stack size
+    test_interpreter("(count-define 100000)", "0");
+  
+  
+    Interpreter.do("(define count-lambda (lambda (n) (if (le? n 0) 0 (count-lambda (- n 1)))))");
+    // should exceed stack size
+    test_interpreter("(count-lambda 100000)", "0");
+    
+    // three layer recursion
+    
+    Interpreter.do("(define (test-f n) (if (le? n 0) 0 (test-g n)))");
+    Interpreter.do("(define (test-g n) (test-h (+ n 1)))");
+    Interpreter.do("(define (test-h n) (test-f (- n 2)))");
+    test_interpreter("(test-f 50000)","0");
   });
 })();

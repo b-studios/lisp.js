@@ -72,8 +72,7 @@ var Interpreter = (function() {
       if(list.second() !== LISP.nil)
         return LISP.Continuation(list.second(), cont.env, evaluate);
         
-      else
-        return evaluate(cont.env);      
+      else return evaluate(cont.env);      
     },   
     
     
@@ -291,18 +290,21 @@ var Interpreter = (function() {
   
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
     // return wert  
-    "begin": function(list, cont) {    
-      return (function eval_lines(lines) {        
-        return LISP.Continuation(lines.first(), cont.env, function(value) {
-          
-          var rest_lines = lines.rest();
-          
-          if(rest_lines instanceof LISP.Pair)
-            return eval_lines(rest_lines);
-            
-          else return cont(value);      
-        });
-      })(list);
+    
+    "begin": function(list, cont) {
+    
+      function process_lines(lines) {
+      
+        if(lines.rest() instanceof LISP.Pair)
+          return LISP.Continuation(lines.first(), cont.env, function(value) {
+            return process_lines(lines.rest());
+          });
+        
+        else 
+          return LISP.Continuation(lines.first(), cont.env, cont);
+       
+      }
+      return process_lines(list);
     },
     
     
@@ -336,7 +338,7 @@ var Interpreter = (function() {
   };
 
 
-  // Helpermethods
+  // Helpermethods  
   
   function LispCompare(list, comparator, cont) {
     
@@ -452,9 +454,11 @@ var Interpreter = (function() {
           return Eval_Lambda(function_slot, rest_list, cont);
         
         // It's a continuation, so eval the first argument and call the continuation with it
-        if(function_slot instanceof Function && function_slot.type == 'Continuation')
+        if(function_slot instanceof Function && function_slot.type == 'Continuation') {
+          console.log("Called cont");
           return LISP.Continuation(rest_list.first(), cont.env, function_slot);
-                
+                 
+        }
         // seems to be a builtin function
         if(function_slot instanceof Function)
           return function_slot(rest_list, cont); // Diese Ausführung returned eine Continuation
