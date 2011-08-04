@@ -146,7 +146,7 @@ LISP.Environment = function(parent) {
 LISP.Continuation = function(list, env, cont) {
   
   cont.env             = env;
-  cont.to_s            = function() { return "<continuation>" };
+  cont.to_s            = function() { return "<Continuation>" };
   cont.list            = list;
   cont.inspect         = function() { return {
     env: env, 

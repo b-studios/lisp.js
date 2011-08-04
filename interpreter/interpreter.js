@@ -53,7 +53,7 @@ var Interpreter = (function() {
     },
     
     // returns the current bindings
-    "bindings": function(list, cont) {
+    "get-bindings": function(list, cont) {
       return cont(cont.env);
     },
     
@@ -303,6 +303,36 @@ var Interpreter = (function() {
           else return cont(value);      
         });
       })(list);
+    },
+    
+    
+    /* not working correctly with
+       (define return false) 
+        
+       (+ 1 (call/cc 
+              (lambda (cont) 
+                (set! return cont) 
+                1))) 
+                
+       (return 22) ;=> 23
+       
+    */
+    "call/cc": function(list, cont) {
+      // First argument of call/cc has to be a function
+      return LISP.Continuation(list.first(), cont.env, function(lambda) {
+        
+        if(!(lambda instanceof LISP.Lambda))
+          throw "call/cc has to be called with a Lambda as first argument";
+        
+        // now bind the current continuation to the first argument of the lambda
+        var lambda_env = new LISP.Environment(lambda.defined_env);
+        
+        lambda_env.set(lambda.args.first().value, cont); //LISP.Continuation(LISP.nil, cont.env, cont));
+        
+        return LISP.Continuation(lambda.body, lambda_env, function() {
+          return cont(LISP.nil);
+        });
+      });
     }
   };
 
@@ -427,7 +457,7 @@ var Interpreter = (function() {
         // seems to be a builtin function
         if(function_slot instanceof Function)
             return function_slot(rest_list, cont); // Diese Ausführung returned eine Continuation
-           
+        
         else
           throw "Try to exec non function " + function_slot.to_s();
       

@@ -159,8 +159,8 @@
   
   test("Work with Bindings", function() {
   
-    Interpreter.do("(define (get-bindings foo) (bindings))");
-    Interpreter.do("(define somebinding (get-bindings 5))");
+    Interpreter.do("(define (bindings foo) (get-bindings))");
+    Interpreter.do("(define somebinding (bindings 5))");
     test_interpreter("(eval (+ foo 6) somebinding)", "11");
     test_interpreter("(defined? 'foo)", "false");
     test_interpreter("(eval (defined? 'foo) somebinding)", "true");
