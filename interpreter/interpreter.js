@@ -3,16 +3,13 @@
  * @requires LISP all datatypes for this interpreter
  * @requires Parser the Lisp-Parser
  *
- * @todo Macros, Tests
+ * @todo Macros, Tests, Environment and Continuations as first class Objects
  */
 var Interpreter = (function() {
 
   // console for outputting builtin print-function
   var print_console = window.console;
   
-  // Init Environment
-  var __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
-
   var BuiltIns = {
     
     "assert": function(list, cont) {
@@ -55,13 +52,28 @@ var Interpreter = (function() {
       return cont(list.first());
     },
     
+    // returns the current bindings
+    "bindings": function(list, cont) {
+      return cont(cont.env);
+    },
+    
     // Double evaluate
     "eval": function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(first_pass) {
-        return LISP.Continuation(first_pass, cont.env, function(second_pass) {
-          return cont(second_pass);
-        });        
-      });
+      
+      var evaluate = function(env) {
+        return LISP.Continuation(list.first(), env, function(first_pass) {
+          return LISP.Continuation(first_pass, env, function(second_pass) {
+            return cont(second_pass);
+          });        
+        });
+     }
+      
+      // evaluate second argument - it's the binding
+      if(list.second() !== LISP.nil)
+        return LISP.Continuation(list.second(), cont.env, evaluate);
+        
+      else
+        return evaluate(cont.env);      
     },   
     
     
@@ -196,7 +208,8 @@ var Interpreter = (function() {
       // define lambda shorthand
       if(first_arg instanceof LISP.Pair) {
         var key = first_arg.first().value,
-            lambda = new LISP.Lambda(first_arg.rest(), list.second(), cont.env)
+            body = new LISP.Pair(new LISP.Symbol("begin"), list.rest()),
+            lambda = new LISP.Lambda(first_arg.rest(), body, cont.env)
         
         cont.env.set(key, lambda);
         return cont(lambda);    
@@ -214,7 +227,8 @@ var Interpreter = (function() {
     "lambda": function(list, cont) {
       
       var args = list.first(),
-          body = list.second();
+          // allow multiple function bodies
+          body = new LISP.Pair(new LISP.Symbol("begin"), list.rest());
           
       return cont(new LISP.Lambda(args, body, cont.env));
     },
@@ -254,6 +268,25 @@ var Interpreter = (function() {
                       
         });
       })(args, new LISP.Environment(cont.env));
+    },
+    
+    "defined?": function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(key) {
+        return cont((cont.env.get(key.value) !== null) ? LISP.true : LISP.false);
+      });
+    },
+    
+    "typeof": function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(value) {
+      
+        if(!value)
+          return cont(LISP.nil);
+          
+        if(!value.type)
+          return cont(new LISP.Symbol("Builtin"));
+          
+        return cont(new LISP.Symbol(value.type));      
+      });
     },
   
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
@@ -419,12 +452,15 @@ var Interpreter = (function() {
     
     var cont = LISP.Continuation(list, __GLOBAL__, function(results) { return results; });
        
-    while(typeof cont == "function" && !!cont.is_continuation) {
+    while(typeof cont == "function" && cont.type == "Continuation") {
       cont = Eval(cont.list, cont);
     }
     
     return cont;    
   };
+  
+  // Init Environment
+  var __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
   
   var self = {
     'eval': Trampoline,

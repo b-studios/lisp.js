@@ -23,43 +23,51 @@ LISP.Pair = function(first, rest) {
   };
   
   this.to_s = function() { return "(" + this[0].to_s() + " . " + this[1].to_s() + ")"; }
+  
+  this.type = "Pair";
 };
 
 LISP.Number = function(value) {
   this.value = Number(value);
   this.to_s = function() { return "" + this.value; };
+  this.type = "Number";
 };
 
 LISP.String = function(value) {
   this.value = value;
   this.to_s = function() { return '"' + this.value + '"'; };
+  this.type = "String";
 };
 
 LISP.Quoted = function(value) {
   this.value = value;
   this.to_s = function() { return "'" + this.value.to_s(); };
+  this.type = "Quoted";
 };
 
 LISP.Symbol = function(value) {
   this.value = value;
   this.to_s = function() { return "" + this.value; };
+  this.type = "Symbol";
 };
 
 LISP.Boolean = function(value) {
   this.value = !!value;
   this.to_s = function() { return "" + this.value; };
+  this.type = "Boolean";
 };
 
 LISP.Nil = function() {
   this.value = "nil";
   this.to_s = function() { return "nil" };
+  this.type = "Nil";  
 };
 
 LISP.Lambda = function(args, body, defined_env) {
   this.args = args;
   this.body = body;
   this.defined_env = defined_env;
-  
+  this.type = "Lambda";  
   this.to_s = function() { return "<userdefined function>" };
 };
 
@@ -89,6 +97,8 @@ LISP.Environment = function(parent) {
         return store[key];
       } else if(parent != null) {
         return parent.get(key);
+      } else {
+        return null;
       }
     },
     
@@ -124,7 +134,9 @@ LISP.Environment = function(parent) {
     },
     
     bindings: store,
-    'super': parent
+    'super': parent,
+    to_s: function() { return "<Environment>"; },
+    type: "Environment"
   };
   
   return env;
@@ -135,14 +147,13 @@ LISP.Continuation = function(list, env, cont) {
   
   cont.env             = env;
   cont.to_s            = function() { return "<continuation>" };
-  cont.is_continuation = true;
   cont.list            = list;
   cont.inspect         = function() { return {
     env: env, 
     cont: cont,
     list: list  
   }};
-  
+  cont.type = "Continuation";
   return cont;
 }
 
