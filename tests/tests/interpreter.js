@@ -1,7 +1,7 @@
  (function() {
 
   // local helpers  
-  var p = function(a,b) { return new LISP.Pair(a,b) },
+  var p = function(a,b) { return new LISP.Pair(a,b); },
       sym = function(v) { return new LISP.Symbol(v); },
       s = function(v) { return new LISP.String(v); },
       n = function(v) { return new LISP.Number(v); },
@@ -11,10 +11,10 @@
       test_interpreter = function(input, output) {
         equal(Interpreter.read_eval_print(input), output);
       };
-      
+ 
+  
   module("Interpreter", {
     
-    // Clear environment after each test
     teardown: function() {
       Interpreter.do("(define teardown_test 444)");
       Interpreter.read_eval_print("(reset)");

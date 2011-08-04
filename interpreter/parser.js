@@ -84,14 +84,14 @@ var Parser = function(string) {
       var rest = readListRest();
     }
     return new LISP.Pair(first, rest)
-  };
+  }
   
   function readPairRest() {
     scanner.skip();
     var rest = read();
     scanner.consume(')');
     return rest;
-  };
+  }
   
   function readAtom() {  
     // Everything except whitespaces and ( )
@@ -119,7 +119,7 @@ var Parser = function(string) {
       return new LISP.Symbol(atom);
       
     else throw "Atom: Could not find right type for '"+ atom +"'";    
-  };
+  }
 
   return {
     
