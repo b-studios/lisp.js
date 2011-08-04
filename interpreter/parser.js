@@ -42,9 +42,10 @@ var Parser = function(string) {
   
   // stimmt noch nicht ganz!!!
   function readQuoted() {
+    scanner.consume("'");
     // Werden Listen mit Quote nicht auch gequoted?? So wie '(list . foo)
-    var quoteValue = scanner.consume("'").until(['(',')'].concat(whitespaces));
-    return new LISP.Quoted(quoteValue);
+    //var quoteValue = scanner.until(['(',')'].concat(whitespaces));
+    return new LISP.Quoted(read());
   }
   
   function readString() {

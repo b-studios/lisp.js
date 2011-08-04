@@ -37,7 +37,7 @@ LISP.String = function(value) {
 
 LISP.Quoted = function(value) {
   this.value = value;
-  this.to_s = function() { return "'" + this.value; };
+  this.to_s = function() { return "'" + this.value.to_s(); };
 };
 
 LISP.Symbol = function(value) {
@@ -155,6 +155,10 @@ LISP.nil= new LISP.Nil();
 LISP.compare = function(a,b) {
   if(a instanceof LISP.Pair && b instanceof LISP.Pair)
     return LISP.compare(a.first(), b.first()) && LISP.compare(a.rest(), b.rest());
-  else 
+  
+  else if(a instanceof LISP.Quoted && b instanceof LISP.Quoted)
+    return LISP.compare(a.value, b.value);
+  
+  else
     return a.value == b.value;
 }
