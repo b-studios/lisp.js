@@ -47,13 +47,13 @@ var Console = function(selector, action) {
     // if internal console is turned on    
     if(!settings.get('browser_console')) {
       try {
-        var return_val = "=> " + action(command);
+        action(command); // self.output(...);        
       } catch (e) {
-        return_val = "<span class='error'><strong>ERROR:</strong> "+e+"</span>";
-      }      
-      html.output_element(return_val); 
+        self.error(e);
+      }
     
     } else console.log(action(command))
+    
     
     history.add(command);
     input.val("");
@@ -101,6 +101,14 @@ var Console = function(selector, action) {
     
     log: function(msg) {
       html.output_element(msg);
+    },
+    
+    error: function(msg) {
+      html.output_element("<span class='error'><strong>ERROR:</strong> "+msg+"</span>");
+    },
+    
+    output: function(msg) {
+      html.output_element("=> "+msg);
     },
     
     process: function(string) {

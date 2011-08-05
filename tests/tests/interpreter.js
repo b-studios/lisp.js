@@ -9,7 +9,7 @@
       nil = LISP.nil,
       
       test_interpreter = function(input, output) {
-        equal(Interpreter.read_eval_print(input), output);
+        equal(Interpreter.do(input).to_s(), output);
       };
  
   
@@ -17,7 +17,7 @@
     
     teardown: function() {
       Interpreter.do("(define teardown_test 444)");
-      Interpreter.read_eval_print("(reset)");
+      Interpreter.do("(reset)");
       try {
         Interpreter.do("teardown_test");
         ok(false, "Teardown error");
@@ -229,3 +229,7 @@
     test_interpreter("(test-f 50000)","0");
   });
 })();
+
+self.onmessage = function(e) {
+  console.log("test from worker"); 
+}

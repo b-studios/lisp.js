@@ -3,23 +3,49 @@ Core.page("interpreter", function(menu){
   var welcome_printed = false;
 
   var dom = $("#page-interpreter");
-
-  var console = Console(dom, function(command) {
-    return Interpreter.read_all(command);
+ 
+  if(!!window.Worker) {
+    var worker = new Worker("interpreter/interpreter.js");
+    worker.onmessage = function(evt) {
+    
+      var msg = evt.data;
+      
+      switch(msg.action) {
+        case 'return':
+          console.output(msg.data.result + " (in "+msg.data.total+"ms)");
+          break;
+        
+        case 'error':
+          console.error(msg.data);
+          break;
+          
+        case 'log':        
+        default:
+          console.log(msg.data);  
+          break;      
+      }      
+    
+    }
+  }
+  
+  var console = Console(dom, function(msg) {
+ 
+    if(!!worker) {
+      worker.postMessage(msg);
+    
+    } else {
+      return Interpreter.read_all(command, function(result_set) {
+        console.output(result_set.result);
+      });
+    } 
   });
 
   function initialize() {
     
     dom.hide();
     
-    Interpreter.read_eval_print('(define welcome_message "Welcome to this Lisp-Interpreter. <br/>Just type some Lisp-Code below or get informed about the builtin functions (Simply press F1)<br/><br/>Why don\'t you start with something like <code>(+ 40 2)</code>?")');
     
-    // set console for printing out of lisp
-    Interpreter.configure({
-      console: console
-    });
-    
-    
+     
     
     commands = {      
       help: Core.command('Help', Core.pages.help),
@@ -40,7 +66,7 @@ Core.page("interpreter", function(menu){
     show: function() {
       if(!welcome_printed) {
         setTimeout(function() {
-          console.process("(print welcome_message)");
+          console.process('(print "Welcome to this LISP Interpreter!")');
         }, 400);
       }
     

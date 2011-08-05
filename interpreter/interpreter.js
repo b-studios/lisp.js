@@ -3,47 +3,88 @@
  * @requires LISP all datatypes for this interpreter
  * @requires Parser the Lisp-Parser
  *
- * @todo Macros, Tests, Environment and Continuations as first class Objects
- * @note falls es nochmals Probleme geben sollte mit TCO, könnten alle `return`
- *   Aufrufe, die bisher wie folgt realisiert sind:
- *
- *     return foo;
- *     => 
- *     cont(foo);
- *
- * umgeschrieben werden zu:
- *     
- *     LISP.Continuation(foo, cont.env, cont);
- *
- * zu beachten ist, dass dabei foo ein zweites mal evaluiert wird. Eventuell
- * müsste man das durch `new LISP.Quote(foo)` verhindern
+ * @todo Macros
  *
  * - display 
  * - workerthread
- 
- 
- Verwendet die continuations für timeslicing, wenn workerthread nicht supported
- 
+ *
+ *
+ * Verwendet die continuations für timeslicing, wenn workerthread nicht supported
+ *
  */
-var Interpreter = (function() {
+ 
+var this_worker; 
+try { this_worker = self; importScripts } catch (e) { this_worker = null; }
 
+ 
+var Interpreter = (function() {
+  
   var configs = {
-    // console for outputting builtin print-function  
-    console: window.console,
-    
-    // Trampoline in cooperative mode (timeslicing)
-    coop: false,
-      
+  
     // timeslice in ms
     timeslice: 100,
     
     // time to wait, until continuing
-    wait: 25
+    wait: 25,
+    
+    worker: true,
+    
+    coop: true,
+    
+    handlers: {    
+      success: function(){},
+      error: function(e){ throw e; }    
+    }
   
   };
   
   // just search and replace `//Debugger` with `Debugger`
-  var Debugger = window.console;
+  //var Debugger = window.console;
+   
+  // We are inside of a Workerthread  
+  if(!!configs.worker && this_worker) {
+    importScripts('stringscanner.js', 'parser.js', 'lisp.js');
+    
+    // We are already threaded, so we don't need cooperative mulitthreading
+    configs.coop = false;
+    configs.console = {    
+      log: function(msg) {
+        this_worker.postMessage({
+          action: 'log',
+          data: msg
+        });
+      }
+    };
+    configs.handlers = {
+      success: function(results) {
+        this_worker.postMessage({
+          action: 'return',
+          data: results
+        });
+      },
+      
+      error: function(msg) {
+        this_worker.postMessage({
+          action: 'error',
+          data: msg
+        })
+      } 
+    };
+        
+    // listen to messages
+    this_worker.onmessage = function(evt) {
+    
+      // we always use self.read_all
+      self.read_all(evt.data, configs.handlers.success);                
+    }
+    
+  } else {
+   
+    // We are not inside of a Workerthread, so let's use coop mode
+    configs.coop = true;
+    configs.console = window.console;
+  }
+  
   
   var BuiltIns = {
     
@@ -79,7 +120,7 @@ var Interpreter = (function() {
         return cont(first_arg.rest());
       });
     }),    
-    
+     
     
     
     // just do nothing for this eval
@@ -114,18 +155,37 @@ var Interpreter = (function() {
     
     "print": LISP.Builtin(function(list, cont) {    
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
+        configs.console.log("\n" + first_arg.to_s());
+        return cont(LISP.nil);
+      });
+    }),
+    
+    "display": LISP.Builtin(function(list, cont) {    
+      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
         configs.console.log(first_arg.to_s());
         return cont(LISP.nil);
       });
     }),
     
     "error": LISP.Builtin(function(list, cont) {
-      throw (list.to_s());
+      throw (list.first().to_s());
     }),
     
     "inspect": LISP.Builtin(function(list, cont) {
       console.log(list, env);
       return cont(LISP.nil);
+    }),
+    
+    "system": LISP.Builtin(function(list, cont) {
+      configs.console.log("SYSTEM-CONFIGS: { worker:"+(configs.worker?"true":"false")+", coop:"+(configs.coop?"true":"false")+" }");
+      return cont(LISP.nil);    
+    }),
+    
+    "set-coop": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
+        configs.coop = !!first_arg.value;        
+        return cont(first_arg);
+      });
     }),
     
     // Resets the Global environment
@@ -476,16 +536,7 @@ var Interpreter = (function() {
    
     // if there's no environment, use GLOBAL-one
     cont.env = cont.env || __GLOBAL__;    
-    
-    function resolve(symbol) {
-      var resolved_symbol = cont.env.get(symbol);  
-      // cannot resolve this item
-      if(resolved_symbol == undefined)
-        throw "cannot resolve symbol '"+symbol+"'";
-      else
-        return resolved_symbol;  
-    }
-    
+  
     if(list instanceof LISP.Pair) {
     
       //Debugger.log("Pair:", list.to_s());
@@ -514,10 +565,12 @@ var Interpreter = (function() {
       
     // it's an Symbol, that we want to resolve
     } else if(list instanceof LISP.Symbol) { 
-      //Debugger.log("Symbol:", list.to_s());
-      var resolved = resolve(list.value);
-      //Debugger.log("Resolved:", resolved.to_s());
-      return cont(resolved)
+      var resolved = cont.env.get(list.value);  
+
+      if(resolved == undefined)
+        throw "cannot resolve symbol '"+ list.value +"'";
+        
+      return cont(resolved);
       
     // it's quoted, let's reveal the content
     } else if(list instanceof LISP.Quoted) { 
@@ -563,20 +616,12 @@ var Interpreter = (function() {
   var __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
   
   var self = {
-    'eval': function(list) {
-      var cont = LISP.Continuation(list, __GLOBAL__, function(results) { return LISP.Result(results); });
-      return Trampoline(cont);
-    },
     
     // just takes one command and interprets it
     'do': function(string) {
-      return self.eval(Parser(string).read());
+      var cont = LISP.Continuation(Parser(string).read(), __GLOBAL__, function(results) { return LISP.Result(results); });
+      return Trampoline(cont);
     },
-    
-    'read_eval_print': function(string) {
-      return self.eval(Parser(string).read()).to_s();
-    },
-    
     
     // TODO measure total execution time
     // calls callback with object:
@@ -585,45 +630,38 @@ var Interpreter = (function() {
     //   time: measured execution time
     'read_all': function(string, callback) {
       
-      var total_start = new Date(),
-          parser = Parser(string),
+      var parser = Parser(string),
+          total_start = new Date(),
           timings = [];
           
       function process_next(result) {
      
-        if(!!parser.eos()) {          
-          callback({
+        if(!!parser.eos())
+          return callback({
             result: result.to_s(),
-            result_lisp: result,
             total: new Date() - total_start
           });
         
-        } else {
-          var cont = LISP.Continuation(parser.read(), __GLOBAL__, function(results) { return LISP.Result(results); });
-          CoopTrampoline(cont, process_next);
-        }
+        var cont = LISP.Continuation(parser.read(), __GLOBAL__, function(results) { return LISP.Result(results); });
         
-        return "Finished";          
+        try {
+          
+          if(!!configs.coop)          
+            CoopTrampoline(cont, process_next);
+          
+          else
+            process_next(Trampoline(cont));        
+        } catch(e) {
+          configs.handlers.error(e);
+        }
       }
       
       // start asynchronous processing, i.e. wait for next free slice
-      setTimeout(process_next, 15);
-    },
-    
-    'read_all_coop': function(string, callback) {
-      var parser = Parser(string);
-      var result;
-      for(;;) {
-        
-        if(!!parser.eos())
-          return result.to_s();      
-        
-        else
-          result = self.eval(parser.read());
-      }
+      if(!!configs.coop)
+        setTimeout(process_next, 15);
       
-      var cont = LISP.Continuation(list, __GLOBAL__, function(results) { return LISP.Result(results); });
-      return CoopTrampoline(cont, configs.timeslice, configs.wait);
+      else
+        return process_next();
     },
     
     'environment': __GLOBAL__,
