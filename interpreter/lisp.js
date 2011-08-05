@@ -68,7 +68,7 @@ LISP.Lambda = function(args, body, defined_env) {
   this.body = body;
   this.defined_env = defined_env;
   this.type = "Lambda";  
-  this.to_s = function() { return "<userdefined function>" };
+  this.to_s = function() { return "&lt;Userdefined Function&gt;" };
 };
 
 /**
@@ -135,7 +135,7 @@ LISP.Environment = function(parent) {
     
     bindings: store,
     'super': parent,
-    to_s: function() { return "<Environment>"; },
+    to_s: function() { return "&lt;Environment&gt;"; },
     type: "Environment"
   };
   
@@ -146,7 +146,7 @@ LISP.Environment = function(parent) {
 LISP.Continuation = function(list, env, cont) {
   
   cont.env             = env;
-  cont.to_s            = function() { return "<Continuation>" };
+  cont.to_s            = function() { return "&lt;Continuation&gt;" };
   cont.list            = list;
   cont.inspect         = function() { return {
     env: env, 
@@ -156,6 +156,12 @@ LISP.Continuation = function(list, env, cont) {
   cont.type = "Continuation";
   return cont;
 }
+
+LISP.Builtin = function(method) {  
+  method.to_s = function() { return "&lt;Native Function&gt;"; }
+  method.type = "Builtin";
+  return method;
+};
 
 LISP.true = new LISP.Boolean(true);
 

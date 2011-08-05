@@ -5,7 +5,7 @@ Core.page("interpreter", function(menu){
   var dom = $("#page-interpreter");
 
   var console = Console(dom, function(command) {
-    return Interpreter.read_eval_print(command);
+    return Interpreter.read_all(command);
   });
 
   function initialize() {
@@ -15,7 +15,9 @@ Core.page("interpreter", function(menu){
     Interpreter.read_eval_print('(define welcome_message "Welcome to this Lisp-Interpreter. <br/>Just type some Lisp-Code below or get informed about the builtin functions (Simply press F1)<br/><br/>Why don\'t you start with something like <code>(+ 40 2)</code>?")');
     
     // set console for printing out of lisp
-    Interpreter.setConsole(console);
+    Interpreter.configure({
+      console: console
+    });
     
     
     
