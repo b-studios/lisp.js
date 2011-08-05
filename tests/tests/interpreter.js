@@ -204,8 +204,8 @@
        */
   test("call/cc", function() {
     Interpreter.do("(define return nil)");
-    Interpreter.do("(define foo nil)");
     test_interpreter("(let ((val (call/cc (lambda (cont) (set! return cont) 1)))) (begin (set! foo (* val 2)) (+ val 1)))", "2");
+    Interpreter.do("(define foo nil)");
     test_interpreter("foo", "2");
     test_interpreter("(return 5)", "6");
     test_interpreter("foo", "10");    

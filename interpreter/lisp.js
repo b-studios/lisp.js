@@ -163,6 +163,16 @@ LISP.Builtin = function(method) {
   return method;
 };
 
+
+LISP.Result = function(data) {
+  var result = {
+    data: data,
+    to_s: function() { return data.to_s(); },
+    type: 'Result'
+  }  
+  return result;  
+};
+
 LISP.true = new LISP.Boolean(true);
 
 LISP.false = new LISP.Boolean(false);
