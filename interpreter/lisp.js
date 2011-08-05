@@ -148,11 +148,6 @@ LISP.Continuation = function(list, env, cont) {
   cont.env             = env;
   cont.to_s            = function() { return "&lt;Continuation&gt;" };
   cont.list            = list;
-  cont.inspect         = function() { return {
-    env: env, 
-    cont: cont,
-    list: list  
-  }};
   cont.type = "Continuation";
   return cont;
 }

@@ -544,9 +544,6 @@ var Interpreter = (function() {
   };
   
   function CoopTrampoline(cont, callback) {
-    
-    console.log("Started Trampoline");
-    
     var start = new Date();
     
     // break after 100ms
@@ -556,11 +553,8 @@ var Interpreter = (function() {
       }
       else return callback(cont);
     }
-    
-    console.log("Going to sleep");
     // continue after 25ms
     setTimeout(function() {
-      console.log("Awakened");
       CoopTrampoline(cont, callback);
     }, configs.wait);  
   };
@@ -592,16 +586,12 @@ var Interpreter = (function() {
     'read_all': function(string, callback) {
       
       var total_start = new Date(),
-          parser = Parser(string);
+          parser = Parser(string),
+          timings = [];
           
       function process_next(result) {
-      
-        console.log("Started processing");
-      
-        if(!!parser.eos()) {
-        
-          console.log("Finished processing");
-          
+     
+        if(!!parser.eos()) {          
           callback({
             result: result.to_s(),
             result_lisp: result,
