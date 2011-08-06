@@ -7,7 +7,7 @@ var InterpreterAdapter = function(console){
 
   // if worker are supported
   if(!!window.Worker) {
-    var worker = new Worker("jsterminal/worker.js");
+    var worker = new Worker("jsconsole/worker.js");
     worker.onmessage = function(evt) {
     
       var msg = evt.data;

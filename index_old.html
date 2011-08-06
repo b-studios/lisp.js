@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>  
+  <script src="jsterminal/jquery/jquery.js"/></script>
+  <script src="jsterminal/jquery/jquery.textinput.js"/></script>
+  <link href="jsterminal/console/console.css" rel="stylesheet"></link>
+</head>
+<body>
+
+<article id="console">
+  <header id="console-header"><h1>Where are we?</h1></header>
+  
+  <section id="page-interpreter">
+    <div id="console-out"></div>
+    <form id="console-in">
+        <textarea placeholder="Enter some Lisp-code here..." id="input" autofocus></textarea>
+    </form>
+  </section>
+  
+<section id="page-help" class="page">
+JSTerminal - Help
+=================
+The following list should give you a better image of the supported builtin
+functions. They are splitted in to the sections:
+
+  - <a href="#help-literals">Literals</a>
+  - <a href="#help-lists">Lists and Pairs</a>
+  - <a href="#help-eval">Evaluation</a>
+  - <a href="#help-output">Output</a>
+  - <a href="#help-calc">Calculations</a>
+  - <a href="#help-comp">Comparators</a>
+  - <a href="#help-env">Environment affecting functions</a>
+  - <a href="#help-flow">Program flow</a>
+
+
+<h2 id="help-literals">Literals</h2>
+--------
+  <strong>true</strong>
+    The true keyword
+    
+  <strong>false</strong>
+    The false keyword
+  
+  <strong>nil</strong>
+    The nil keyword
+  
+  
+<h2 id="help-lists">Lists and Pairs</h2>
+---------------
+  (<strong>cons</strong> arg1 arg2) 
+    Creates a new Pair of the two items arg1 and arg2
+    => (arg1 . arg2)
+    
+  (<strong>car</strong> list)
+    Gets the first element of a list
+  
+  (<strong>cdr</strong> list)
+    Gets the rest of a list (except the first element)
+
+
+<h2 id="help-eval">Evaluation</h2>
+----------
+  (<strong>eval</strong> arg1)
+    Evals the first argument
+    
+  (<strong>quote</strong> arg1)
+    Returns the first argument without evaluating it
+    
+    
+<h2 id="help-output">Output</h2>
+------
+  (<strong>print</strong> arg1)
+    Evals the first argument and prints it return-value to console
+    
+  (<strong>error</strong> arg1)
+    Throws an error with the string-representation of unevaluated arg1 as value
+    
+  (<strong>inspect</strong> arg1)
+    Outputs arg1 and the current environment on the browser-console. (console.log)
+
+
+<h2 id="help-calc">Calculations</h2>
+------------
+  (<strong>+</strong> arg1 arg2)
+    Creates the sum for arg1 and arg2. (Works for Numbers and Strings)
+    
+  Supported numerical methods are: + - * / % (modulo)
+
+  
+<h2 id="help-comp">Comparators</h2>
+-----------
+  (<strong>eq?</strong> arg1 arg2)
+    Returns a boolean true if arg1 matches arg2. Lists are matched recursivly.
+    
+  Also available comparators for numbers:
+  - gt? (greater than)
+  - ge? (greater or equal)
+  - lt? (less than)
+  - le? (less or equal)
+  
+  (<strong>not</strong> expr)
+    expr has to evaluate to a boolean value. Then not will act as logical not on
+    that value.  
+
+  
+<h2 id="help-env">Environment affecting functions</h2>
+-------------------------------
+  (<strong>define</strong> symbol value)
+    Binds value to the symbol in the current environment. The define-shorthand
+    with three arguments for lambda-definition is currently not supported.
+    
+  (<strong>set!</strong> symbol value)
+    Binds value to the symbol in the current environment, if it's defined in there.
+    Otherwise it will recursivly try to resolve symbol in all parent environments
+    to set the value there.
+  
+  (<strong>lambda</strong> args body)
+    Args is a list, specifying what arguments the lambda can take. On execution
+    a new environment is created and the arguments will be available in this
+    new context.
+
+    
+<h2 id="help-flow">Program flow</h2>
+------------
+  (<strong>if</strong> cond if-part else-part)
+    Evaluates the condition and decides which part is evaluated next.
+    
+  (<strong>begin</strong> statement1 statement2 ...)
+    Evaluates all given statements one after another.
+
+
+</section>
+  
+  <section id="page-settings" class="page">
+Interpreter-Settings
+====================
+
+   <label><input type="checkbox" id="settings_browser_console">(F5) Use Browser-Console as Output</label>
+   <label><input type="checkbox" id="settings_editor_mode">(F6) Work in Editor-Mode (instead of Console)</label>
+   <label><input type="checkbox" id="settings_auto_env">(F7) Automatically load Environment on start</label>
+
+
+Interpreter-Environment
+=======================
+Here you can write some Lisp Code, that will be executed on interpreter-start. (Only if the above option is selected (F7))
+<button id="settings_apply_env"><span>Apply Environment</span> (F8)</button>
+<textarea id="settings_environment"></textarea>
+  
+<span class="flash"></span>
+</section>
+  
+  
+  
+</article>
+  
+<script src="interpreter/stringscanner.js"></script>
+<script src="interpreter/lisp.js"></script>
+<script src="interpreter/parser.js"></script>
+<script src="interpreter/interpreter.js"></script>
+
+<script src="jsterminal/store.js"/></script>
+
+<script src="jsterminal/console/history.js"/></script>
+<script src="jsterminal/console/console.js"/></script>
+<script src="jsterminal/interpreter_adapter.js"></script>
+  
+<script src="jsterminal/core.js"></script>
+<script src="jsterminal/core.settings.js"></script>
+<script src="jsterminal/core.command.js"></script>
+<script src="jsterminal/core.page.js"></script>
+
+<script src="jsterminal/pages/core.page.interpreter.js"></script>
+<script src="jsterminal/pages/core.page.help.js"></script>
+<script src="jsterminal/pages/core.page.settings.js"></script>
+
+<script>
+  $(function() {    
+    $('input[type=checkbox], input[type=radio]').replace_input();
+  
+    Core.dispatcher.init();
+    Core.dispatcher.open("interpreter");
+  });
+</script>
+</body>
+</html>
