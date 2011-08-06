@@ -141,7 +141,7 @@ function post(cmd, blind, response /* passed in when echoing from remote console
     el.className = 'response';
     span.innerHTML = response[1];
 
-    if (response[0] != 'info') prettyPrint([span]);
+
     el.appendChild(span);
 
     li.className = response[0];
@@ -171,7 +171,7 @@ function log(msg, className) {
       div = document.createElement('div');
 
   div.innerHTML = msg;
-  prettyPrint([div]);
+  //prettyPrint([div]);
   li.className = className || 'log';
   li.innerHTML = '<span class="gutter"></span>';
   li.appendChild(div);
@@ -183,7 +183,7 @@ function echo(cmd) {
   var li = document.createElement('li');
 
   li.className = 'echo';
-  li.innerHTML = '<span class="gutter"></span><div>' + cleanse(cmd) + '<a href="/?' + encodeURIComponent(cmd) + '" class="permalink" title="permalink">link</a></div>';
+  li.innerHTML = '<span class="gutter"></span><div>' + cleanse(cmd) + '</div>';
 
   logAfter = null;
 
@@ -278,10 +278,6 @@ function showhelp() {
     '',
     'Directions to <a href="/inject.html">inject</a> JS Console in to any page (useful for mobile debugging)'
   ];
-    
-  if (injected) {
-    commands.push(':close - to hide the JS Console');
-  }
   
   // commands = commands.concat([
   //   'up/down - cycle history',
@@ -293,64 +289,6 @@ function showhelp() {
   return commands.join('\n');
 }
 
-function load(url) {
-  if (navigator.onLine) {
-    if (arguments.length > 1 || libraries[url] || url.indexOf('.js') !== -1) {
-      return loadScript.apply(this, arguments);
-    } else {
-      return loadDOM(url);
-    }    
-  } else {
-    return "You need to be online to use :load";
-  }
-}
-
-function loadScript() {
-  var doc = sandboxframe.contentDocument || sandboxframe.contentWindow.document;
-  for (var i = 0; i < arguments.length; i++) {
-    (function (url) {
-      var script = document.createElement('script');
-      script.src = url
-      script.onload = function () {
-        window.top.info('Loaded ' + url, 'http://' + window.location.hostname);
-        if (url == libraries.coffeescript) window.top.info('Now you can type CoffeeScript instead of plain old JS!');
-      };
-      script.onerror = function () {
-        log('Failed to load ' + url, 'error');
-      }
-      doc.body.appendChild(script);
-    })(libraries[arguments[i]] || arguments[i]);
-  }
-  return "Loading script...";
-}
-
-function loadDOM(url) {
-  var doc = sandboxframe.contentWindow.document,
-      script = document.createElement('script'),
-      cb = 'loadDOM' + +new Date;
-      
-  script.src = 'http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22' + encodeURIComponent(url) + '%22&format=xml&callback=' + cb;
-  
-  window[cb] = function (yql) {
-    if (yql.results.length) {
-      var html = yql.results[0].replace(/type="text\/javascript"/ig,'type="x"').replace(/<body.*?>/, '').replace(/<\/body>/, '');
-
-      doc.body.innerHTML = html;
-      window.top.info('DOM load complete');
-    } else {
-      log('Failed to load DOM', 'error');
-    }
-    try {
-      window[cb] = null;
-      delete window[cb];
-    } catch (e) {}      
-    
-  };
-  
-  document.body.appendChild(script);
-  
-  return "Loading url into DOM...";
-}
 
 function checkTab(evt) {
   var t = evt.target,
@@ -419,7 +357,7 @@ function trim(s) {
   return (s||"").replace(/^\s+|\s+$/g,"");
 }
 
-var ccCache = ["%", "*", "+", "-", "/", "and", "assert", "begin", "call/cc", "car", "cdr", "cons", "define", "defined?", "display", "eq?", "error", "eval", "ge?", "get-bindings", "gt?", "if", "inspect", "lambda", "le?", "let", "lt?", "not", "or", "pair?", "print", "quote", "reset", "set!", "set-coop", "system", "typeof", "xor"];
+var ccCache = ["%", "*", "+", "-", "/", "and", "assert", "begin", "call/cc", "car", "cdr", "cons", "define", "defined?", "eq?", "error", "eval", "ge?", "get-bindings", "gt?", "if", "inspect", "lambda", "le?", "let", "lt?", "not", "or", "pair?", "print", "quote", "reset", "set!", "set-coop", "system", "typeof", "xor"];
 var ccPosition = false;
 
 function getProps(cmd, filter) {
@@ -569,7 +507,7 @@ function setHistory(history) {
 }
 
 function about() {
-  return 'Built by <a target="_new" href="http://twitter.com/rem">@rem</a>';
+  return 'lisp-interpreter built by <a target="_new" href="http://b-studios.de">b-studios</a>, jsconsole built by <a target="_new" href="http://twitter.com/rem">@rem</a>';
 }
 
 
@@ -585,23 +523,10 @@ var exec = document.getElementById('exec'),
     form = exec.form || {},
     output = document.getElementById('output'),
     cursor = document.getElementById('exec'),
-    injected = typeof window.top['JSCONSOLE'] !== 'undefined',
-    sandboxframe = injected ? window.top['JSCONSOLE'] : document.createElement('iframe'),
-    sandbox = null,
     fakeConsole = 'window.top._console',
     history = getHistory(),
     liveHistory = (window.history.pushState !== undefined),
     pos = 0,
-    libraries = {
-        jquery: 'http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js',
-        prototype: 'http://ajax.googleapis.com/ajax/libs/prototype/1/prototype.js',
-        dojo: 'http://ajax.googleapis.com/ajax/libs/dojo/1/dojo/dojo.xd.js',
-        mootools: 'http://ajax.googleapis.com/ajax/libs/mootools/1/mootools-yui-compressed.js',
-        underscore: 'http://documentcloud.github.com/underscore/underscore-min.js',
-        rightjs: 'http://rightjs.org/hotlink/right.js',
-        coffeescript: 'http://jashkenas.github.com/coffee-script/extras/coffee-script.js',
-        yui: 'http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js'
-    },
     body = document.getElementsByTagName('body')[0],
     logAfter = null,
     historySupported = !!(window.history && window.history.pushState),
@@ -613,63 +538,11 @@ var exec = document.getElementById('exec'),
     commands = { 
       help: showhelp, 
       about: about,
-      // loadjs: loadScript, 
-      load: load,
       history: showHistory,
       clear: function () {
         setTimeout(function () { output.innerHTML = ''; }, 10);
         return 'clearing...';
       },
-      close: function () {
-        if (injected) {
-          JSCONSOLE.console.style.display = 'none';
-          return 'hidden';
-        } else {
-          return 'noop';
-        }
-      },
-      listen: function (id) {
-        // place script request for new listen ID and start SSE
-        var script = document.createElement('script'),
-            callback = '_cb' + +new Date;
-        script.src = '/remote/' + (id||'') + '?callback=' + callback;
-
-        window[callback] = function (id) {
-          remoteId = id;
-          if (sse !== null) sse.close();
-
-          sse = new EventSource('/remote/' + id + '/log');
-          sse.onopen = function () {
-            remoteId = id;
-            window.top.info('Connected to "' + id + '"\n\n<script src="http://jsconsole.com/remote.js?' + id + '"></script>');
-          };
-
-          sse.onmessage = function (event) {
-            var data = JSON.parse(event.data);
-            if (data.type && data.type == 'error') {
-              post(data.cmd, true, ['error', data.response]);
-            } else if (data.type && data.type == 'info') {
-              window.top.info(data.response);
-            } else {
-              if (data.cmd != 'remote console.log') data.response = data.response.substr(1, data.response.length - 2); // fiddle to remove the [] around the repsonse
-              echo(data.cmd);
-              log(data.response, 'response');
-            }
-          };
-
-          sse.onclose = function () {
-            window.top.info('Remote connection closed');
-            remoteId = null;
-          };
-
-          try {
-            body.removeChild(script);
-            delete window[callback];
-          } catch (e) {}
-        };
-        body.appendChild(script);
-        return 'Creating connection...';
-      }
     },
     // I hate that I'm browser sniffing, but there's issues with Firefox and execCommand so code completion won't work
     iOSMobile = navigator.userAgent.indexOf('AppleWebKit') !== -1 && navigator.userAgent.indexOf('Mobile') !== -1,
@@ -680,22 +553,6 @@ if (enableCC) {
   exec.parentNode.innerHTML = '<div autofocus id="exec" spellcheck="false"><span id="cursor" contenteditable></span></div>';
   exec = document.getElementById('exec');
   cursor = document.getElementById('cursor');
-}
-
-if (!injected) {
-  body.appendChild(sandboxframe);
-  sandboxframe.setAttribute('id', 'sandbox');  
-}
-
-sandbox = sandboxframe.contentDocument || sandboxframe.contentWindow.document;
-
-if (!injected) {
-  sandbox.open();
-  // stupid jumping through hoops if Firebug is open, since overwriting console throws error
-  sandbox.write('<script>(function () { var fakeConsole = ' + fakeConsole + '; if (console != undefined) { for (var k in fakeConsole) { console[k] = fakeConsole[k]; } } else { console = fakeConsole; } })();</script>');
-  sandbox.close();
-} else {
-  sandboxframe.contentWindow.eval('(function () { var fakeConsole = ' + fakeConsole + '; if (console != undefined) { for (var k in fakeConsole) { console[k] = fakeConsole[k]; } } else { console = fakeConsole; } })();');
 }
 
 // tweaks to interface to allow focus

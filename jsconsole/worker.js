@@ -19,7 +19,7 @@ Interpreter.configure({
   coop: false,
   
   console: {
-    log: respond('log')
+    log: respond('log'),
   }
 });
   
@@ -28,7 +28,9 @@ self.onmessage = function(evt) {
   
   try {
     // we always use self.read_all
-    Interpreter.read_all(evt.data, respond('response'));                
+    Interpreter.read_all(evt.data, respond('response'), respond('error'));
+  
+  // unexpected errors
   } catch(e) {
     respond('error')(e);
   }
