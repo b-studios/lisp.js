@@ -1,5 +1,10 @@
 (function (window) {
 
+// Plug my Interpreter into jsconsole
+var Interpreter = InterpreterAdapter(function(msg) {
+  post("", undefined, msg);
+});
+
 function sortci(a, b) {
   return a.toLowerCase() < b.toLowerCase() ? -1 : 1;
 }
@@ -102,12 +107,7 @@ function run(cmd) {
   } else {
    
   try {      
-      rawoutput = cmd;
-      throw {message: "Foo"};
-      setTimeout(function() {
-        
-        post(cmd, undefined, ['response', "Return of " + cmd]);
-      }, 150);
+      Interpreter(cmd);
       
     } catch (e) {
       return ['error', cleanse(e.message)];

@@ -4,11 +4,11 @@ importScripts('../interpreter/stringscanner.js',
               '../interpreter/interpreter.js');
 
 
-function respond(action) {
+function respond(log_class) {
   return function(results) {
     self.postMessage({
-      action: action,
-      data: results
+      className: log_class,
+      message: results
     });
   };
 }
@@ -28,7 +28,7 @@ self.onmessage = function(evt) {
   
   try {
     // we always use self.read_all
-    Interpreter.read_all(evt.data, respond('return'));                
+    Interpreter.read_all(evt.data, respond('response'));                
   } catch(e) {
     respond('error')(e);
   }

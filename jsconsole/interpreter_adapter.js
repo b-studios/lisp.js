@@ -1,62 +1,29 @@
-var InterpreterAdapter = function(console){
+var InterpreterAdapter = function(callback){
 
-
-  function composeOutput(data) {
-    return data.result + " (in "+data.total+"ms)"
-  }
-
-  // if worker are supported
+  // if worker are supported - see worker.js
   if(!!window.Worker) {
     var worker = new Worker("jsconsole/worker.js");
     worker.onmessage = function(evt) {
     
       var msg = evt.data;
-      
-      switch(msg.action) {
-        case 'return':
-          console.output(composeOutput(msg.data));
-          break;
-        
-        case 'error':
-          console.error(msg.data);
-          break;
-          
-        case 'log':        
-        default:
-          console.log(msg.data);  
-          break;      
-      }      
-    
+      callback([msg.className, msg.message.result]);   
     }
+  
+  // Webworkers are note supported - maybe configure Interpreter here
+  } else {
+  
   }
   
   
-  return {
-  
-    'do': function(string) {
+  // We only use read_all for now
+  return function(string) {
       
-      if(!!worker)
-        worker.postMessage({
-          action: 'do',
-          data: string
-        });
-      
-      else return Interpreter.do(string);
-      
-    },
+    if(!!worker)
+      worker.postMessage(string);
     
-    'read_all': function(string) {
-      
-      if(!!worker)
-        worker.postMessage({
-          action: 'read_all',
-          data: string
-        });
-      
-      else return Interpreter.read_all(string, function(result_set) {
-          console.output(composeOutput(result_set));
-        });      
-    }
+    else return Interpreter.read_all(string, function(msg) {
+      callback(['response', msg.result]); 
+    });      
   }
 
 };
