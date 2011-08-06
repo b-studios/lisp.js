@@ -4,49 +4,13 @@ Core.page("interpreter", function(menu){
 
   var dom = $("#page-interpreter");
  
-  // if worker are supported
-  if(!!window.Worker) {
-    var worker = new Worker("jsterminal/worker.js");
-    worker.onmessage = function(evt) {
-    
-      var msg = evt.data;
-      
-      switch(msg.action) {
-        case 'return':
-          console.output(msg.data.result + " (in "+msg.data.total+"ms)");
-          break;
-        
-        case 'error':
-          console.error(msg.data);
-          break;
-          
-        case 'log':        
-        default:
-          console.log(msg.data);  
-          break;      
-      }      
-    
-    }
-  }
-  
-  var console = Console(dom, function(msg) {
- 
-    if(!!worker) {
-      worker.postMessage(msg);
-    
-    } else {
-      return Interpreter.read_all(command, function(result_set) {
-        console.output(result_set.result);
-      });
-    } 
-  });
+  var interpreter = InterpreterAdapter(console);  
+
+  var console = Console(dom, interpreter.read_all);
 
   function initialize() {
     
-    dom.hide();
-    
-    
-     
+    dom.hide();     
     
     commands = {      
       help: Core.command('Help', Core.pages.help),

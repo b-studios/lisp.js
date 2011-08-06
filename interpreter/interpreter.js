@@ -606,6 +606,18 @@ var Interpreter = (function() {
         return process_next();
     },
     
+    'get_symbols': function() {
+      var symbols = [],
+          bindings = __GLOBAL__.bindings;
+    
+      for(symbol in bindings) {
+        if(bindings.hasOwnProperty(symbol))
+          symbols.push(symbol);
+      }
+      
+      return symbols.sort();
+    },
+    
     'environment': __GLOBAL__,
     
     'configure': function(opts) {
