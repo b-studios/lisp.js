@@ -4,8 +4,9 @@ Core.page("interpreter", function(menu){
 
   var dom = $("#page-interpreter");
  
+  // if worker are supported
   if(!!window.Worker) {
-    var worker = new Worker("interpreter/interpreter.js");
+    var worker = new Worker("jsterminal/worker.js");
     worker.onmessage = function(evt) {
     
       var msg = evt.data;

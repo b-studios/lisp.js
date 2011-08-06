@@ -1,33 +1,35 @@
-var Thread = function(opts) {
+importScripts('../interpreter/stringscanner.js',
+              '../interpreter/parser.js', 
+              '../interpreter/lisp.js',
+              '../interpreter/interpreter.js');
 
-  opts.timeslice = opts.timeslice || 100;
-  opts.pause = opts.pause || 25;
-  opts.callback = opts.callback || function(return_val) {
-  
+
+function respond(action) {
+  return function(results) {
+    self.postMessage({
+      action: action,
+      data: results
+    });
   };
-  // Webworker support
-  if(!!window.Worker) {
-  
-  
-  
-  } 
-  
-  // Do timeslicing
-  function calculate(action) {
-  
-    var start = Date();
-    while((Date() - start) < opts.timeslice) {
-      if(action instanceof Function)
-        action = action();
-      
-      else return opts.callback(action);
-    }
-    
-    // continue after some time
-    setTimeout(function() {
-      calculate(action);
-    }, opts.pause);    
-  }
-  
+}
 
-};
+
+Interpreter.configure({
+  
+  coop: false,
+  
+  console: {
+    log: respond('log')
+  }
+});
+  
+// listen to messages
+self.onmessage = function(evt) {
+  
+  try {
+    // we always use self.read_all
+    Interpreter.read_all(evt.data, respond('return'));                
+  } catch(e) {
+    respond('error')(e);
+  }
+}

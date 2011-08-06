@@ -13,10 +13,6 @@
  *
  */
  
-var this_worker; 
-try { this_worker = self; importScripts } catch (e) { this_worker = null; }
-
- 
 var Interpreter = (function() {
   
   var configs = {
@@ -29,62 +25,12 @@ var Interpreter = (function() {
     
     worker: true,
     
-    coop: true,
-    
-    handlers: {    
-      success: function(){},
-      error: function(e){ throw e; }    
-    }
+    coop: true
   
   };
   
   // just search and replace `//Debugger` with `Debugger`
-  //var Debugger = window.console;
-   
-  // We are inside of a Workerthread  
-  if(!!configs.worker && this_worker) {
-    importScripts('stringscanner.js', 'parser.js', 'lisp.js');
-    
-    // We are already threaded, so we don't need cooperative mulitthreading
-    configs.coop = false;
-    configs.console = {    
-      log: function(msg) {
-        this_worker.postMessage({
-          action: 'log',
-          data: msg
-        });
-      }
-    };
-    configs.handlers = {
-      success: function(results) {
-        this_worker.postMessage({
-          action: 'return',
-          data: results
-        });
-      },
-      
-      error: function(msg) {
-        this_worker.postMessage({
-          action: 'error',
-          data: msg
-        })
-      } 
-    };
-        
-    // listen to messages
-    this_worker.onmessage = function(evt) {
-    
-      // we always use self.read_all
-      self.read_all(evt.data, configs.handlers.success);                
-    }
-    
-  } else {
-   
-    // We are not inside of a Workerthread, so let's use coop mode
-    configs.coop = true;
-    configs.console = window.console;
-  }
-  
+  //var Debugger = window.console;  
   
   var BuiltIns = {
     
@@ -643,17 +589,13 @@ var Interpreter = (function() {
           });
         
         var cont = LISP.Continuation(parser.read(), __GLOBAL__, function(results) { return LISP.Result(results); });
+         
+        if(!!configs.coop)          
+          CoopTrampoline(cont, process_next);
+          
+        else
+          process_next(Trampoline(cont));        
         
-        try {
-          
-          if(!!configs.coop)          
-            CoopTrampoline(cont, process_next);
-          
-          else
-            process_next(Trampoline(cont));        
-        } catch(e) {
-          configs.handlers.error(e);
-        }
       }
       
       // start asynchronous processing, i.e. wait for next free slice
