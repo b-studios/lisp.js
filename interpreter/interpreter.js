@@ -61,6 +61,15 @@ var Interpreter = (function() {
   
   // Evaluators
   
+  /**
+   * Lambdas with var-args:
+   * If the last list member isn't nil, but a symbol, then the list of following
+   * evaluated values is bound to this member.
+   *
+   * The rest of key_args is either a pair (Another list) or the end of the list
+   * i.e. LISP.Symbol or LISP.nil
+   *
+   */
   function EvalLambda(lambda, call_args, cont) {
 
     function BindArgs(key_args, value_args, bind_env, eval_env, cont) {
@@ -69,23 +78,59 @@ var Interpreter = (function() {
       if(key_args.first() == LISP.nil)
         return cont(bind_env);    
         
-      // Create a Continuation, which can used to bind the first evaled value to
-      // the first symbol of lambda's argument list
-      return LISP.Continuation(value_args.first(), eval_env, function(value) {
-    
-        bind_env.set(key_args.first().value, value);
-                
-        key_rest = key_args.rest();
-        value_rest = value_args.rest();
+      
+      // eval all value-arguments
+      return EvalEachInList(value_args, eval_env, function(values) {
+            
+        var keys_rest = key_args,
+            values_rest = values;
+      
+        while(keys_rest instanceof LISP.Pair && values_rest instanceof LISP.Pair) {
+          bind_env.set(keys_rest.first().value, values_rest.first());         
+          values_rest = values_rest.rest();
+          keys_rest   = keys_rest.rest();        
+        }
         
-        // there are still some more args to eval
-        if(key_rest instanceof LISP.Pair && value_args instanceof LISP.Pair)
-          return BindArgs(key_rest, value_rest, bind_env, eval_env, cont);
-          
-        else
+        // bind varargs
+        if(keys_rest instanceof LISP.Symbol && values_rest instanceof LISP.Pair) {
+          bind_env.set(keys_rest.value, values_rest);
           return cont(bind_env);
+        }
+        
+        // everything went find
+        if(keys_rest === LISP.nil && values_rest === LISP.nil)
+          return cont(bind_env);
+        
+        else throw("Lambda called with wrong number of arguments.");
+        
       });
-    }
+    }    
+    
+    function EvalEachInList(args, env, cont) {
+        
+        function Helper(args, evaled_values, cont) {          
+        
+          if(args instanceof LISP.Pair)        
+            return LISP.Continuation(args.first(), env, function(value) {
+              evaled_values.push(value);
+              return Helper(args.rest(), evaled_values, cont);    
+            });
+          
+          else return cont(evaled_values);
+          
+       }
+        
+       return Helper(args, [], function(evaled_values) {
+         
+         // convert array to lisp-list (reverted)         
+         var list = LISP.nil;
+         
+         for(var i=evaled_values.length-1;i>=0;i--)
+           list = new LISP.Pair(evaled_values[i], list);
+         
+         return cont(list);
+       });
+    }    
 
 
     /**

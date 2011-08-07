@@ -252,7 +252,7 @@
     "let": LISP.Builtin(function(list, cont) {
     
       var args = list.first(),
-          body = list.second();
+          body = new LISP.Pair(new LISP.Symbol("begin"), list.rest());
             
       return (function bind(args, bind_env) {
         
