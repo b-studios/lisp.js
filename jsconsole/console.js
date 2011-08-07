@@ -585,9 +585,15 @@ cursor.focus();
 output.parentNode.tabIndex = 0;
 
 function whichKey(event) {
+  
+  if(!event)
+    return;
+    
+
   var keys = {38:1, 40:1, Up:38, Down:40, Enter:10, 'U+0009':9, 'U+0008':8, 'U+0190':190, 'Right':39, 
       // these two are ignored
-      'U+0028': 57, 'U+0026': 55 }; 
+      'U+0028': 57, 'U+0026': 55 };
+  
   return keys[event.keyIdentifier] || event.which || event.keyCode;
 }
 

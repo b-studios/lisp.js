@@ -1,9 +1,19 @@
+// IE fix
+if(!(typeof String.prototype.trim == 'function')) {
+  String.prototype.trim = function() {
+    return this.replace(/^\s+|\s+$/g, ''); 
+  }
+}
+
+
 /**
  * @constructor Parser
- */
+ */ 
 var Parser = function(string) {    
   
   var whitespaces = ["\n","\t"," "];
+  
+  
   
   // Create a StringScanner from Input    
   var scanner = StringScanner(string.trim());
@@ -11,7 +21,7 @@ var Parser = function(string) {
   function read() {    
     // End of File
     if(scanner.peek() === undefined) 
-      throw "Unsuspected end of File at Position " + scanner.position();
+      throw("Unsuspected end of File at Position " + scanner.position());
     
     // Skip over Whitespaces
     scanner.skip();
@@ -125,10 +135,6 @@ var Parser = function(string) {
     
     eos: function() {
       return scanner.peek() === undefined;
-    },
-    
-    match_parenthesis: function() {
-    
     }
   
   };    
