@@ -28,7 +28,12 @@ self.onmessage = function(evt) {
   
   try {
     // we always use self.read_all
-    Interpreter.read_all(evt.data, respond('response'), respond('error'));
+    Interpreter.read_all(evt.data, function(msg) {
+      self.postMessage({
+        className: 'response',
+        message: msg.result + "<time>"+msg.total+" ms</time>"
+      });
+    }, respond('error'));
   
   // unexpected errors
   } catch(e) {

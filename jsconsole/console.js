@@ -100,19 +100,16 @@ function run(cmd) {
       internalCmd = internalCommand(cmd);
   
   // at this point i can put in my interpreter
+  window.console.log(internalCmd);
   
-  if (internalCmd) {
+  if (!!internalCmd)
     return ['info', internalCmd];
   
-  } else {
-   
-  try {      
-      Interpreter(cmd);
-      
-    } catch (e) {
-      return ['error', cleanse(e.message)];
-    }
-  }  
+  else try { 
+    Interpreter(cmd); 
+  } catch (e) {
+    return ['error', cleanse(e.message)];
+  }   
 }
 
 function post(cmd, blind, response /* passed in when echoing from remote console */) {
@@ -266,17 +263,20 @@ function internalCommand(cmd) {
 
 function noop() {}
 
+function show_system_configs() {
+  setTimeout(function() {
+    Interpreter("(system)");
+  }, 15);
+  
+  return "Interpreter's System configs: ";
+}
+
 function showhelp() {
   var commands = [
-    ':load &lt;url&gt; - to inject new DOM',
-    ':load &lt;script_url&gt; - to inject external library',
-    '      load also supports following shortcuts: <br />      jquery, underscore, prototype, mootools, dojo, rightjs, coffeescript, yui.<br />      eg. :load jquery',
-    ':listen [id] - to start <a href="/remote-debugging.html">remote debugging</a> session',
+    ':about',
     ':clear - to clear the history (accessed using cursor keys)',
     ':history - list current session history',
-    ':about',
-    '',
-    'Directions to <a href="/inject.html">inject</a> JS Console in to any page (useful for mobile debugging)'
+    ':system - get informations about the interpreter'
   ];
   
   // commands = commands.concat([
@@ -291,6 +291,9 @@ function showhelp() {
 
 
 function checkTab(evt) {
+
+  window.console.log("foo");
+
   var t = evt.target,
       ss = t.selectionStart,
       se = t.selectionEnd,
@@ -316,6 +319,7 @@ function checkTab(evt) {
 
     // "Normal" case (no selection or selection on one line only)
     else {
+
       t.value = t.value.slice(0,ss).concat(tab).concat(t.value.slice(ss,t.value.length));
       if (ss == se) {
         t.selectionStart = t.selectionEnd = ss + tab.length;
@@ -532,13 +536,13 @@ var exec = document.getElementById('exec'),
     historySupported = !!(window.history && window.history.pushState),
     sse = null,
     lastCmd = null,
-    remoteId = null,
     codeCompleteTimer = null,
     keypressTimer = null,
     commands = { 
       help: showhelp, 
       about: about,
       history: showHistory,
+      system: show_system_configs,
       clear: function () {
         setTimeout(function () { output.innerHTML = ''; }, 10);
         return 'clearing...';

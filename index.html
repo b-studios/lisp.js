@@ -2,7 +2,7 @@
 <html lang="en"> <!--manifest="jsconsole.appcache"-->
 <head>
 <meta charset="utf-8" />
-<title>JavaScript console - for debugging JavaScript and remote debugging mobile web apps</title>
+<title>Lisp.js - A Lisp interpreter written in JavaScript</title>
 <meta id="meta" name="viewport" content="width=device-width; user-scalable=no; initial-scale=1.0" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta names="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,19 +15,17 @@
 <div id="console">
   <ul id="output"></ul>
 </div>
-<div id="footer"><a href="http://github.com/remy/jsconsole">Fork on Github</a> &bull; <a href="http://twitter.com/rem">JSConsole built by @rem</a></div>
+<div id="footer"><a href="http://github.com/b-studios/lisp.js">Fork on Github</a> &bull; <a href="http://twitter.com/rem">JSConsole built by @rem</a></div>
 
 <!-- Load Interpreter -->
 <script src="interpreter/stringscanner.js"></script>
-<script src="interpreter/parser.js"></script>
 <script src="interpreter/lisp.js"></script>
+<script src="interpreter/parser.js"></script>
 <script src="interpreter/interpreter.js"></script>
 
 <script src="jsconsole/interpreter_adapter.js"></script>
 
 <!-- Sources of jsconsole by Remy Sharp http://remysharp.com -->
-<script src="jsconsole/prettify.packed.js"></script>
-<script src="jsconsole/EventSource.js"></script>
 <script src="jsconsole/console.js"></script>
 </body>
 </html>

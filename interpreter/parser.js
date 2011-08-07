@@ -106,10 +106,10 @@ var Parser = function(string) {
       return LISP.nil;
       
     else if(atom.match(/true/))
-      return LISP.true;
+      return LISP.True;
     
     else if(atom.match(/false/))
-      return LISP.false;
+      return LISP.False;
       
     else if(atom.match(/nil/))
       return LISP.nil;
@@ -127,6 +127,10 @@ var Parser = function(string) {
     
     eos: function() {
       return scanner.peek() === undefined;
+    },
+    
+    match_parenthesis: function() {
+    
     }
   
   };    

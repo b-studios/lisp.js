@@ -3,12 +3,6 @@
  * @requires LISP all datatypes for this interpreter
  * @requires Parser the Lisp-Parser
  *
- * @todo Macros
- *
- * - display 
- * - workerthread
- *
- *
  * Verwendet die continuations für timeslicing, wenn workerthread nicht supported
  *
  */
@@ -16,16 +10,16 @@
 var Interpreter = (function() {
   
   var configs = {
-  
+    
+    worker: true,
+    
+    coop: true,
+    
     // timeslice in ms
     timeslice: 100,
     
     // time to wait, until continuing
     wait: 25,
-    
-    worker: true,
-    
-    coop: true
   
   };
   
@@ -36,7 +30,7 @@ var Interpreter = (function() {
     
     "assert": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(value) {
-        if(value == LISP.true)
+        if(value == LISP.True)
           return cont(LISP.nil);
         else
           throw "Assertion failure: " + list.second().to_s();
@@ -101,13 +95,6 @@ var Interpreter = (function() {
     
     "print": LISP.Builtin(function(list, cont) {    
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        configs.console.log("\n" + first_arg.to_s());
-        return cont(LISP.nil);
-      });
-    }),
-    
-    "display": LISP.Builtin(function(list, cont) {    
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
         configs.console.log(first_arg.to_s());
         return cont(LISP.nil);
       });
@@ -123,8 +110,12 @@ var Interpreter = (function() {
     }),
     
     "system": LISP.Builtin(function(list, cont) {
-      configs.console.log("SYSTEM-CONFIGS: { worker:"+(configs.worker?"true":"false")+", coop:"+(configs.coop?"true":"false")+" }");
-      return cont(LISP.nil);    
+      var system_infos = [
+            "Using browser's webworkers: " + (configs.worker ? "true" : "false"),
+            "Using continuations for cooperative multitasking: " + (configs.coop ? "true" : "false")
+      ];
+      configs.console.log(system_infos.join("\n"));
+      return cont(LISP.nil);
     }),
     
     "set-coop": LISP.Builtin(function(list, cont) {
@@ -208,7 +199,7 @@ var Interpreter = (function() {
     "eq?": LISP.Builtin(function(list, cont) {                
       return LISP.Continuation(list.first(), cont.env, function(first_arg) { 
         return LISP.Continuation(list.second(), cont.env, function(second_arg) { 
-          return cont(LISP.compare(first_arg, second_arg) ? LISP.true : LISP.false);          
+          return cont(LISP.compare(first_arg, second_arg) ? LISP.True : LISP.False);          
         });        
       });
     }),
@@ -310,7 +301,7 @@ var Interpreter = (function() {
     
     "defined?": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(key) {
-        return cont((cont.env.get(key.value) !== null) ? LISP.true : LISP.false);
+        return cont((cont.env.get(key.value) !== null) ? LISP.True : LISP.False);
       });
     }),
     
@@ -331,10 +322,10 @@ var Interpreter = (function() {
     "pair?": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(value) {
         if(value instanceof LISP.Pair)
-          return cont(LISP.true);
+          return cont(LISP.True);
           
         else
-          return cont(LISP.false);
+          return cont(LISP.False);
       });
     }),
   
@@ -400,7 +391,7 @@ var Interpreter = (function() {
         if(typeof comp != "boolean")
           throw "can not compare " + first_arg + " and " + second_arg;
     
-        return cont(comp? LISP.true : LISP.false);    
+        return cont(comp? LISP.True : LISP.False);    
       });        
     });    
   }
@@ -574,7 +565,7 @@ var Interpreter = (function() {
     //   result: string representation of the result
     //   result_lisp: result object
     //   time: measured execution time
-    'read_all': function(string, callback) {
+    'read_all': function(string, success_callback, error_callback) {
       
       var parser = Parser(string),
           total_start = new Date(),
@@ -583,18 +574,22 @@ var Interpreter = (function() {
       function process_next(result) {
      
         if(!!parser.eos())
-          return callback({
+          return success_callback({
             result: result.to_s(),
             total: new Date() - total_start
-          });
+          });       
         
         var cont = LISP.Continuation(parser.read(), __GLOBAL__, function(results) { return LISP.Result(results); });
-         
-        if(!!configs.coop)          
-          CoopTrampoline(cont, process_next);
-          
-        else
-          process_next(Trampoline(cont));        
+        
+        try {
+          if(!!configs.coop)
+            CoopTrampoline(cont, process_next);
+            
+          else
+            process_next(Trampoline(cont));
+        } catch(e) {
+          error_callback(e);
+        }
         
       }
       

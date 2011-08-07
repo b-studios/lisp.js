@@ -67,10 +67,10 @@
                  s("Foo Bar") );
 
     test_parser( "true", 
-                 LISP.true );
+                 LISP.True );
                  
     test_parser( "false", 
-                 LISP.false );
+                 LISP.False );
                  
     test_parser( "nil", 
                  LISP.nil );

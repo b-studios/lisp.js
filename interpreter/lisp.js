@@ -168,9 +168,9 @@ LISP.Result = function(data) {
   return result;  
 };
 
-LISP.true = new LISP.Boolean(true);
+LISP.True = new LISP.Boolean(true);
 
-LISP.false = new LISP.Boolean(false);
+LISP.False = new LISP.Boolean(false);
 
 LISP.nil= new LISP.Nil();
 

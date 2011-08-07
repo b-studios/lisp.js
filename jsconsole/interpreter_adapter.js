@@ -1,7 +1,7 @@
 var InterpreterAdapter = function(callback){
 
   // if worker are supported - see worker.js
-  if(false /*!!window.Worker*/) {
+  if(!!window.Worker) {
     var worker = new Worker("jsconsole/worker.js");
     worker.onmessage = function(evt) {    
       var msg = evt.data;
@@ -32,7 +32,7 @@ var InterpreterAdapter = function(callback){
     
     else
       Interpreter.read_all(string, function(msg) {
-        callback(['response', msg]); 
+        callback(['response', msg.result + "<time>"+msg.total+" ms</time>"]);
       }, function(e) {
         callback(['error', e]);
       });  
