@@ -1,13 +1,7 @@
-/**
- * @object Interpreter
- * @requires LISP all datatypes for this interpreter
- * @requires Parser the Lisp-Parser
- *
- * Verwendet die continuations für timeslicing, wenn workerthread nicht supported
- *
- */
- 
 var Interpreter = (function() {
+  
+  // The top-environment
+  var __GLOBAL__;
   
   var configs = {
     
@@ -19,79 +13,17 @@ var Interpreter = (function() {
     timeslice: 100,
     
     // time to wait, until continuing
-    wait: 25,
+    wait: 25
   
   };
   
-  // just search and replace `//Debugger` with `Debugger`
-  //var Debugger = window.console;  
+  /**
+   * Those builtins could be placed into builtins.js, because they require
+   * access to the system configs.
+   */
+  var system_builtins = {
   
-  var BuiltIns = {
-    
-    "assert": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(value) {
-        if(value == LISP.True)
-          return cont(LISP.nil);
-        else
-          throw "Assertion failure: " + list.second().to_s();
-      });    
-    }),
-    
-    // bekommt zwei Elemente und muss beide evaluieren
-    "cons": LISP.Builtin(function(list, cont) {     
-      
-      // Evaluate first argument
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        // Evaluate second argument
-        return LISP.Continuation(list.second(), cont.env, function(second_arg) {
-          return cont(new LISP.Pair(first_arg, second_arg));
-        });
-      }); 
-    }),
-    
-    "car": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        return cont(first_arg.first());
-      });
-    }),
-    
-    "cdr": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        return cont(first_arg.rest());
-      });
-    }),    
-     
-    
-    
-    // just do nothing for this eval
-    "quote": LISP.Builtin(function(list, cont) {
-      return cont(list.first());
-    }),
-    
-    // returns the current bindings
-    "get-bindings": LISP.Builtin(function(list, cont) {
-      return cont(cont.env);
-    }),
-    
-    // Double evaluate
-    "eval": LISP.Builtin(function(list, cont) {
-      
-      var evaluate = function(env) {
-        return LISP.Continuation(list.first(), env, function(first_pass) {
-          return LISP.Continuation(first_pass, env, function(second_pass) {
-            return cont(second_pass);
-          });
-        });
-     }
-      
-      // evaluate second argument - it's the binding
-      if(list.second() !== LISP.nil)
-        return LISP.Continuation(list.second(), cont.env, evaluate);
-        
-      else return evaluate(cont.env);      
-    }),   
-    
-    
+    // @group printing and system configurations   
     
     "print": LISP.Builtin(function(list, cont) {    
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
@@ -105,7 +37,7 @@ var Interpreter = (function() {
     }),
     
     "inspect": LISP.Builtin(function(list, cont) {
-      console.log(list, env);
+      (!!window && window.console || configs.console).log(list, env);
       return cont(LISP.nil);
     }),
     
@@ -123,339 +55,50 @@ var Interpreter = (function() {
         configs.coop = !!first_arg.value;        
         return cont(first_arg);
       });
-    }),
-    
-    // Resets the Global environment
-    "reset": LISP.Builtin(function(list, cont) {
-      __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
-      return cont(LISP.nil);
-    }),
-    
-    
-    
-    "+": LISP.Builtin(function(list, cont) {
-      return Calculate(list, cont, function(a,b) { return a+b; });
-    }),
-    
-    "-": LISP.Builtin(function(list, cont) {
-      return Calculate(list, cont, function(a,b) { return a-b; });
-    }),
-    
-    "*": LISP.Builtin(function(list, cont) {
-      return Calculate(list, cont, function(a,b) { return a*b; });
-    }),
-    
-    "/": LISP.Builtin(function(list, cont) {
-      return Calculate(list, cont, function(a,b) { return a/b; });
-    }),
-    
-    "%": LISP.Builtin(function(list, cont) {
-      return Calculate(list, cont, function(a,b) { return a%b; });
-    }),
-    
-    // (if cond if-part else-part)
-    "if": LISP.Builtin(function(list, cont) {
-      
-      return LISP.Continuation(list.first(), cont.env, function(condition) {
-               
-        // if-part
-        if(!!condition.value) 
-          return LISP.Continuation(list.second(), cont.env, cont);
-        
-        // else-part
-        else 
-          return LISP.Continuation(list.third(), cont.env, cont);
-      });
-    
-    }),
-    
-    
-    "and": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a && b;
-      }, cont);  
-    }),
-    
-    "or": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a || b;
-      }, cont);  
-    }),
-    
-    "xor": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return (a && !b) || (!a && b);
-      }, cont);  
-    }),
-    
-    "not": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        return cont(new LISP.Boolean(!first_arg.value));
-      });
-    }),
-    
-    
-
-    "eq?": LISP.Builtin(function(list, cont) {                
-      return LISP.Continuation(list.first(), cont.env, function(first_arg) { 
-        return LISP.Continuation(list.second(), cont.env, function(second_arg) { 
-          return cont(LISP.compare(first_arg, second_arg) ? LISP.True : LISP.False);          
-        });        
-      });
-    }),
-    
-    "gt?": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a > b;
-      }, cont);  
-    }),
-    
-    "ge?": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a >= b;
-      }, cont);  
-    }),
-    
-    "lt?": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a < b;
-      }, cont);  
-    }),
-    
-    "le?": LISP.Builtin(function(list, cont) {
-      return LispCompare(list, function(a,b) {
-        return a <= b;
-      }, cont);  
-    }),   
-    
-    
-    
-    "define": LISP.Builtin(function(list, cont) {
-      
-      var first_arg = list.first();
-      
-      // define lambda shorthand
-      if(first_arg instanceof LISP.Pair) {
-        var key = first_arg.first().value,
-            body = new LISP.Pair(new LISP.Symbol("begin"), list.rest()),
-            lambda = new LISP.Lambda(first_arg.rest(), body, cont.env)
-        
-        cont.env.set(key, lambda);
-        return cont(lambda); 
-      
-      // regular define
-      } else {
-        // evaluate second argument
-        return LISP.Continuation(list.second(), cont.env, function(second_arg) {
-          cont.env.set(first_arg.value, second_arg);
-          return cont(second_arg);
-        });
-      }
-    }),
-    
-    "lambda": LISP.Builtin(function(list, cont) {
-      
-      var args = list.first(),
-          // allow multiple function bodies
-          body = new LISP.Pair(new LISP.Symbol("begin"), list.rest());
-          
-      return cont(new LISP.Lambda(args, body, cont.env));
-    }),
-    
-    // setzt erstes argument im aktuellen binding auf den wert des zweiten arguments
-    // liefert dann den Wert des zweiten Arguments zurück
-    "set!": LISP.Builtin(function(list, cont) {
-    
-      // evaluate second argument
-      return LISP.Continuation(list.second(), cont.env, function(second_arg) {
-        cont.env.set_r(list.first().value, second_arg);
-        return cont(second_arg);
-      });
-    }),
-    
-    "let": LISP.Builtin(function(list, cont) {
-    
-      var args = list.first(),
-          body = list.second();
-            
-      return (function bind(args, bind_env) {
-        
-        var kv_pair = args.first();
-        
-        return LISP.Continuation(kv_pair.second(), cont.env, function(value) {
-      
-          bind_env.set(kv_pair.first().value, value);
-          
-          rest_pairs = args.rest();
-          
-          // there are still some more args to eval
-          if(rest_pairs instanceof LISP.Pair)
-            return bind(rest_pairs, bind_env);
-            
-          else
-            return LISP.Continuation(body, bind_env, cont);
-                      
-        });
-      })(args, new LISP.Environment(cont.env));
-    }),
-    
-    "defined?": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(key) {
-        return cont((cont.env.get(key.value) !== null) ? LISP.True : LISP.False);
-      });
-    }),
-    
-    "typeof": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(value) {
-      
-        if(!value)
-          return cont(LISP.nil);
-          
-        if(!value.type)
-          return cont(new LISP.Symbol("Builtin"));
-          
-        return cont(new LISP.Symbol(value.type));    
-      });
-    }),
-    
-    // already provided in typeof...
-    "pair?": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(value) {
-        if(value instanceof LISP.Pair)
-          return cont(LISP.True);
-          
-        else
-          return cont(LISP.False);
-      });
-    }),
-  
-    // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
-    // return wert  
-    
-    "begin": LISP.Builtin(function(list, cont) {
-    
-      function process_lines(lines) {
-      
-        if(lines.rest() instanceof LISP.Pair)
-          return LISP.Continuation(lines.first(), cont.env, function(value) {
-            return process_lines(lines.rest());
-          });
-        
-        else 
-          return LISP.Continuation(lines.first(), cont.env, cont);
-       
-      }
-      return process_lines(list);
-    }),
-    
-    
-    /* not working correctly with
-       (define return false) 
-        
-       (+ 1 (call/cc 
-              (lambda (cont) 
-                (set! return cont) 
-                1))) 
-                
-       (return 22) ;=> 23
-       
-    */
-    "call/cc": LISP.Builtin(function(list, cont) {
-      // First argument of call/cc has to be a function
-      return LISP.Continuation(list.first(), cont.env, function(lambda) {
-        
-        if(!(lambda instanceof LISP.Lambda))
-          throw "call/cc has to be called with a Lambda as first argument";
-        
-        // now bind the current continuation to the first argument of the lambda
-        var lambda_env = new LISP.Environment(lambda.defined_env);
-        
-        lambda_env.set(lambda.args.first().value, cont);
-        
-        // eval body and continue        
-        return LISP.Continuation(lambda.body, lambda_env, cont);
-      });
     })
   };
-
-
-  // Helpermethods  
   
-  function LispCompare(list, comparator, cont) {
-    
-    return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-      return LISP.Continuation(list.second(), cont.env, function(second_arg) {  
+  
+  // Evaluators
+  
+  function EvalLambda(lambda, call_args, cont) {
+
+    function BindArgs(key_args, value_args, bind_env, eval_env, cont) {
+      
+      // empty arguments
+      if(key_args.first() == LISP.nil)
+        return cont(bind_env);    
         
-        var comp = comparator(first_arg.value, second_arg.value);
+      // Create a Continuation, which can used to bind the first evaled value to
+      // the first symbol of lambda's argument list
+      return LISP.Continuation(value_args.first(), eval_env, function(value) {
+    
+        bind_env.set(key_args.first().value, value);
+                
+        key_rest = key_args.rest();
+        value_rest = value_args.rest();
+        
+        // there are still some more args to eval
+        if(key_rest instanceof LISP.Pair && value_args instanceof LISP.Pair)
+          return BindArgs(key_rest, value_rest, bind_env, eval_env, cont);
           
-        if(typeof comp != "boolean")
-          throw "can not compare " + first_arg + " and " + second_arg;
-    
-        return cont(comp? LISP.True : LISP.False);    
-      });        
-    });    
-  }
-  
-  
-  // Evaluates both arguments and afterwards applies op
-  function Calculate(list, cont, op) {
-    
-    // Evaluate first and second argument
-    return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-      return LISP.Continuation(list.second(), cont.env, function(second_arg) {
-       
-      var result = op(first_arg.value, second_arg.value);
-      
-      if(typeof result == "string")
-        return cont(new LISP.String(result));
-        
-      if(typeof result == "number")
-        return cont(new LISP.Number(result));
-     
-     
-      throw result + "is not a number or string";
+        else
+          return cont(bind_env);
       });
-    });
-  }
-  
-  
-  function BindArgs(key_args, value_args, bind_env, eval_env, cont) {
-    
-    // empty arguments
-    if(key_args.first() == LISP.nil)
-      return cont(bind_env);    
-      
-    // Create a Continuation, which can used to bind the first evaled value to
-    // the first symbol of lambda's argument list
-    return LISP.Continuation(value_args.first(), eval_env, function(value) {
-  
-      bind_env.set(key_args.first().value, value);
-              
-      key_rest = key_args.rest();
-      value_rest = value_args.rest();
-      
-      // there are still some more args to eval
-      if(key_rest instanceof LISP.Pair && value_args instanceof LISP.Pair)
-        return BindArgs(key_rest, value_rest, bind_env, eval_env, cont);
-        
-      else
-        return cont(bind_env);
-    });
-  }
-  
-  function Eval_Lambda(lambda, call_args, cont) {
+    }
 
-    /*
-      - args
-      - body
-      - called args
-      
-      ich evaluiere restliste und binde die einzelnen args and die namen der symbols
-      aus args im neuen environment.
-      evaluiere danach body im neuen env
-    */
-    
-    // call_args mit env evaluieren, lambda mit defined_env evaluieren  
+
+    /**
+     * - args
+     * - body
+     * - called args
+     *  
+     * ich evaluiere restliste und binde die einzelnen args and die namen der symbols
+     * aus args im neuen environment.
+     * evaluiere danach body im neuen env
+     *
+     * call_args mit env evaluieren, lambda mit defined_env evaluieren  
+     */
     var lambda_env = new LISP.Environment(lambda.defined_env);
             
     return BindArgs(lambda.args, call_args, lambda_env, cont.env, function(bindings) {
@@ -467,42 +110,38 @@ var Interpreter = (function() {
   
   /**
    * @function .Eval
-   * @returns [LISP.Continuation]
+   * @return [LISP.Continuation]
    */
   function Eval(list, cont) {
    
     // if there's no environment, use GLOBAL-one
-    cont.env = cont.env || __GLOBAL__;    
+    var env = cont.env || __GLOBAL__;    
   
     if(list instanceof LISP.Pair) {
-    
-      //Debugger.log("Pair:", list.to_s());
-    
+        
       // eval first item in list      
-      return LISP.Continuation(list.first(), cont.env, function(function_slot) {
+      return LISP.Continuation(list.first(), env, function(function_slot) {
       
         var rest_list = list.rest();
         
         // oh there is a lambda-definition in function_slot
         if(function_slot instanceof LISP.Lambda) 
-          return Eval_Lambda(function_slot, rest_list, cont);
+          return EvalLambda(function_slot, rest_list, cont);
         
         // It's a continuation, so eval the first argument and call the continuation with it
-        if(function_slot instanceof Function && function_slot.type == 'Continuation') {
-          //Debugger.log("There's a continuation in the function slot");
-          return LISP.Continuation(rest_list.first(), cont.env, function_slot);
-        }
+        if(function_slot instanceof Function && function_slot.type == 'Continuation')
+          return LISP.Continuation(rest_list.first(), env, function_slot);
+        
         // seems to be a builtin function
         if(function_slot instanceof Function && function_slot.type == 'Builtin')
-          return function_slot(rest_list, cont); // Diese Ausführung returned eine Continuation
+          return function_slot(rest_list, cont);
         
-        else
-          throw "Try to exec non function " + function_slot.to_s();      
+        throw "Try to exec non function " + function_slot.to_s();      
       });
       
     // it's an Symbol, that we want to resolve
     } else if(list instanceof LISP.Symbol) { 
-      var resolved = cont.env.get(list.value);  
+      var resolved = env.get(list.value);
 
       if(resolved == undefined)
         throw "cannot resolve symbol '"+ list.value +"'";
@@ -511,28 +150,43 @@ var Interpreter = (function() {
       
     // it's quoted, let's reveal the content
     } else if(list instanceof LISP.Quoted) { 
-      //Debugger.log("Quoted:", list.to_s());
       return cont(list.value);
       
     // it's some Atom
-    } else {  
-      //Debugger.log("Atom:", list.to_s());      
+    } else {      
       return cont(list);
     }
   };
   
   
+  // Trampolines
+  
+  /**
+   * Simple Trampoline
+   * -----------------
+   * Goes on with evaluating the continuations
+   * until the return_value isn't a continuation.
+   */
   function Trampoline(cont) {
        
-    while(typeof cont == "function" && cont.type == "Continuation") {
-      //Debugger.groupCollapsed("Eval: " + cont.list.to_s());
+    while(typeof cont == "function" && cont.type == "Continuation")
       cont = Eval(cont.list, cont);
-      //Debugger.groupEnd("Eval: " + cont.list.to_s());
-    }
-    
+          
     return cont;    
   };
   
+  /**
+   * Special Trampoline for cooperative Multitasking
+   * -----------------------------------------------
+   * To prevent freezing of the Browser while calculating the
+   * cooperative trampoline sleeps after each period, which is configured in 
+   * configs.timeslice.
+   *
+   * This enables the UIThread to interact with the user, while our interpreter
+   * is working.
+   *
+   * Another way to achieve this, is to use HTML5-WebWorkers
+   */
   function CoopTrampoline(cont, callback) {
     var start = new Date();
     
@@ -547,24 +201,17 @@ var Interpreter = (function() {
     setTimeout(function() {
       CoopTrampoline(cont, callback);
     }, configs.wait);  
-  };
+  }
   
-  // Init Environment
-  var __GLOBAL__ = LISP.Environment(null).set(BuiltIns);
   
-  var self = {
+  return {
     
     // just takes one command and interprets it
-    'do': function(string) {
+    'go': function(string) {    
       var cont = LISP.Continuation(Parser(string).read(), __GLOBAL__, function(results) { return LISP.Result(results); });
       return Trampoline(cont);
     },
     
-    // TODO measure total execution time
-    // calls callback with object:
-    //   result: string representation of the result
-    //   result_lisp: result object
-    //   time: measured execution time
     'read_all': function(string, success_callback, error_callback) {
       
       var parser = Parser(string),
@@ -613,17 +260,25 @@ var Interpreter = (function() {
       return symbols.sort();
     },
     
-    'environment': __GLOBAL__,
-    
     'configure': function(opts) {
       for(option in opts) {
         if(opts.hasOwnProperty(option))
           configs[option] = opts[option];
       }
-      return self;
+    },
+    
+    'init': function(builtins) {
+      
+      // extend builtins with system_builtins for printing etc.
+      for(builtin in system_builtins) {
+        if(system_builtins.hasOwnProperty(builtin))
+          builtins[builtin] = system_builtins[builtin];
+      }
+      
+      // Set globals
+      __GLOBAL__ = LISP.Environment(null).set(builtins);    
     }
   
   };
   
-  return self;
 })();

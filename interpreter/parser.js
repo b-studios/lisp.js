@@ -1,7 +1,5 @@
 /**
- * @function Parser
- * @requires LISP the datatypes to create items from
- * @requires StringScanner
+ * @constructor Parser
  */
 var Parser = function(string) {    
   

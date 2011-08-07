@@ -9,17 +9,17 @@
       nil = LISP.nil,
       
       test_interpreter = function(input, output) {
-        equal(Interpreter.do(input).to_s(), output);
+        equal(Interpreter.go(input).to_s(), output);
       };
  
   
   module("Interpreter", {
     
     teardown: function() {
-      Interpreter.do("(define teardown_test 444)");
-      Interpreter.do("(reset)");
+      Interpreter.go("(define teardown_test 444)");
+      Interpreter.go("(reset)");
       try {
-        Interpreter.do("teardown_test");
+        Interpreter.go("teardown_test");
         ok(false, "Teardown error");
       } catch(e) {
         equal(e, "cannot resolve symbol 'teardown_test'");
@@ -99,17 +99,17 @@
   });
   
   test("Define", function() {
-    Interpreter.do("(define foo 3)");
+    Interpreter.go("(define foo 3)");
     test_interpreter("foo", 3);
     
-    Interpreter.do("(define bar (lambda (n) (+ n 1)))");
+    Interpreter.go("(define bar (lambda (n) (+ n 1)))");
     test_interpreter("(bar 4)", 5);
     
-    Interpreter.do("(define (baz n) (+ n 1))");
+    Interpreter.go("(define (baz n) (+ n 1))");
     test_interpreter("(baz 4)", 5);
     
     // multiple commands (like begin)
-    Interpreter.do("(define (bam n) (set! n (+ n 1)) (set! n (* n 2)) n)");
+    Interpreter.go("(define (bam n) (set! n (+ n 1)) (set! n (* n 2)) n)");
     test_interpreter("(bam 4)", 10);
   });
   
@@ -126,20 +126,20 @@
     test_interpreter("(let ((a 4) (b 5)) (+ a b))", "9");
     
     test_interpreter("a", "8");
-    Interpreter.do("(define (test a b) (let ((b (* a b))) (lambda (c) (+ (+ a b) c))))");
+    Interpreter.go("(define (test a b) (let ((b (* a b))) (lambda (c) (+ (+ a b) c))))");
     test_interpreter("((test 4 5) 6)", "30");
   });
   
   test("Closures", function() {
     test_interpreter("((lambda (n) ((lambda (m) (+ n m)) 7)) 8)", "15");
     
-    Interpreter.do("(define (adder n) (lambda (m) (+ n m)))");
-    Interpreter.do("(define add-2 (adder 2))");
+    Interpreter.go("(define (adder n) (lambda (m) (+ n m)))");
+    Interpreter.go("(define add-2 (adder 2))");
     test_interpreter("(add-2 4)", "6");
   });
   
   test("Inner Functions", function() {
-    Interpreter.do("(define (outer list) (define (inner tmp-list) (car tmp-list)) (inner list))");
+    Interpreter.go("(define (outer list) (define (inner tmp-list) (car tmp-list)) (inner list))");
     test_interpreter("(outer '(4 5 6 7 8 9))", "4");
     
     /**
@@ -155,18 +155,18 @@
       (helper list (car list))
     )
     */
-    Interpreter.do("(define (test-max list) (define (helper tmp-list tmp-max) (if (eq? tmp-list nil) tmp-max (if (gt? (car tmp-list) tmp-max) (helper (cdr tmp-list) (car tmp-list)) (helper (cdr tmp-list) tmp-max)))) (helper list (car list)))");
+    Interpreter.go("(define (test-max list) (define (helper tmp-list tmp-max) (if (eq? tmp-list nil) tmp-max (if (gt? (car tmp-list) tmp-max) (helper (cdr tmp-list) (car tmp-list)) (helper (cdr tmp-list) tmp-max)))) (helper list (car list)))");
     test_interpreter("(test-max '(50 12 33 105 9 2 77 8 54))", "105");
   }); 
   
   test("Introspection", function() {
     
-    Interpreter.do("(define test 456)");
+    Interpreter.go("(define test 456)");
     test_interpreter("(defined? 'fofofo)", "false");
     test_interpreter("(defined? '+)", "true");
     test_interpreter("(defined? 'test)", "true");
     
-    Interpreter.do("(define (foo f) (print f))");
+    Interpreter.go("(define (foo f) (print f))");
     test_interpreter("(eq? (typeof foo) 'Lambda)", "true");
     test_interpreter("(eq? (typeof +) 'Builtin)", "true");
     test_interpreter("(eq? (typeof 345) 'Number)", "true");
@@ -177,8 +177,8 @@
   
   test("Work with Bindings", function() {
   
-    Interpreter.do("(define (bindings foo) (get-bindings))");
-    Interpreter.do("(define somebinding (bindings 5))");
+    Interpreter.go("(define (bindings foo) (get-bindings))");
+    Interpreter.go("(define somebinding (bindings 5))");
     test_interpreter("(eval (+ foo 6) somebinding)", "11");
     test_interpreter("(defined? 'foo)", "false");
     test_interpreter("(eval (defined? 'foo) somebinding)", "true");
@@ -203,8 +203,8 @@
    (return 22)
        */
   test("call/cc", function() {
-    Interpreter.do("(define return nil)");
-    Interpreter.do("(define foo nil)");
+    Interpreter.go("(define return nil)");
+    Interpreter.go("(define foo nil)");
     test_interpreter("(let ((val (call/cc (lambda (cont) (set! return cont) 1)))) (begin (set! foo (* val 2)) (+ val 1)))", "2");
     test_interpreter("foo", "2");
     test_interpreter("(return 5)", "6");
@@ -212,24 +212,20 @@
   });
   
   test("Tail call optimization", function() {
-    Interpreter.do("(define (count-define n) (if (le? n 0) 0 (count-define (- n 1))))");
+    Interpreter.go("(define (count-define n) (if (le? n 0) 0 (count-define (- n 1))))");
     // should exceed stack size
     test_interpreter("(count-define 100000)", "0");
   
   
-    Interpreter.do("(define count-lambda (lambda (n) (if (le? n 0) 0 (count-lambda (- n 1)))))");
+    Interpreter.go("(define count-lambda (lambda (n) (if (le? n 0) 0 (count-lambda (- n 1)))))");
     // should exceed stack size
     test_interpreter("(count-lambda 100000)", "0");
     
     // three layer recursion
     
-    Interpreter.do("(define (test-f n) (if (le? n 0) 0 (test-g n)))");
-    Interpreter.do("(define (test-g n) (test-h (+ n 1)))");
-    Interpreter.do("(define (test-h n) (test-f (- n 2)))");
+    Interpreter.go("(define (test-f n) (if (le? n 0) 0 (test-g n)))");
+    Interpreter.go("(define (test-g n) (test-h (+ n 1)))");
+    Interpreter.go("(define (test-h n) (test-f (- n 2)))");
     test_interpreter("(test-f 50000)","0");
   });
 })();
-
-self.onmessage = function(e) {
-  console.log("test from worker"); 
-}

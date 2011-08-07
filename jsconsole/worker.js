@@ -1,7 +1,8 @@
 importScripts('../interpreter/stringscanner.js',
               '../interpreter/parser.js', 
               '../interpreter/lisp.js',
-              '../interpreter/interpreter.js');
+              '../interpreter/interpreter.js',
+              '../interpreter/builtins.js');
 
 
 function respond(log_class) {

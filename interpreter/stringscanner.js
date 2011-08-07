@@ -1,5 +1,5 @@
-/*
- * @function StringScanner
+/**
+ * @constructor StringScanner
  */
 var StringScanner = function(string) {
   
