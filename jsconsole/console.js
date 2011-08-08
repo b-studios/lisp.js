@@ -185,6 +185,13 @@ function post(cmd, blind, response /* passed in when echoing from remote console
   pos = history.length;
 }
 
+function worker(value) {
+  value = value == 'true';
+
+  Interpreter.worker(value);
+  return "Trying to turn workers " + (value? "on" : "off");  
+}
+
 function log(msg, className) {
   var li = document.createElement('li'),
       div = document.createElement('div');
@@ -561,6 +568,7 @@ var exec = document.getElementById('exec'),
     commands = { 
       help: showhelp, 
       about: about,
+      worker: worker,
       history: showHistory,
       system: show_system_configs,
       clear: function () {
