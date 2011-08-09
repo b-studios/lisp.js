@@ -397,22 +397,26 @@ var Interpreter = (function() {
   // Evaluates both arguments and afterwards applies op
   function Calculate(list, cont, op) {
     
-    // Evaluate first and second argument
-    return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-      return LISP.Continuation(list.second(), cont.env, function(second_arg) {
-       
-      var result = op(first_arg.value, second_arg.value);
+    return EvalEachInList(list, cont.env, function(evaled_list) {
+      // use first arg as result
+      var result = evaled_list.first();
       
-      if(typeof result == "string")
-        return cont(new LISP.String(result));
+      while(evaled_list.rest() !== LISP.nil) {
+        evaled_list = evaled_list.rest();
+              
+        result = op(result.value, evaled_list.first().value);
         
-      if(typeof result == "number")
-        return cont(new LISP.Number(result));
-     
-     
-      throw result + "is not a number or string";
-      });
-    });
+        // convert to LISP-Atom        
+        if(typeof result == "string")
+          result = new LISP.String(result);
+          
+        else if(typeof result == "number")
+          result = new LISP.Number(result);
+          
+        else throw result + " is not a number or string";
+      }
+      return cont(result);      
+    });    
   }
   
   
