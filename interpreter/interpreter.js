@@ -47,13 +47,19 @@ var Interpreter = (function() {
          
     "car": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        return cont(first_arg.first());
+        if(first_arg instanceof LISP.Pair)
+          return cont(first_arg.first());
+        
+        else throw "Cannot calculate car of " + first_arg.type + " " + first_arg.to_s();
       });
     }),
          
     "cdr": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-        return cont(first_arg.rest());
+        if(first_arg instanceof LISP.Pair)
+          return cont(first_arg.rest());
+        
+        else throw "Cannot calculate cdr of " + first_arg.type + " " + first_arg.to_s();
       });
     }),    
      
@@ -62,8 +68,7 @@ var Interpreter = (function() {
          
     "quote": LISP.Builtin(function(list, cont) {
       return cont(list.first());
-    }),
-    
+    }),    
     
     "get-bindings": LISP.Builtin(function(list, cont) {
       return cont(cont.env);
@@ -72,17 +77,21 @@ var Interpreter = (function() {
     "eval": LISP.Builtin(function(list, cont) {
       
       var evaluate = function(env) {
+      
+        if(env.type !== 'Environment')
+          throw(env.to_s() + " is not an environment, and cannot be used for evaluation.");
+      
         return LISP.Continuation(list.first(), env, function(first_pass) {
           return LISP.Continuation(first_pass, env, function(second_pass) {
             return cont(second_pass);
           });
         });
-     }
+      };
       
       // evaluate second argument - it's the binding
       if(list.second() !== LISP.nil)
         return LISP.Continuation(list.second(), cont.env, evaluate);
-        
+      
       else return evaluate(cont.env);      
     }),
     
@@ -114,7 +123,10 @@ var Interpreter = (function() {
     "if": LISP.Builtin(function(list, cont) {
       
       return LISP.Continuation(list.first(), cont.env, function(condition) {
-               
+        
+        if(!(condition instanceof LISP.Boolean))
+          throw("Condition has to eval to boolean (got: " + condition.to_s() + ")");
+        
         // if-part
         if(!!condition.value) 
           return LISP.Continuation(list.second(), cont.env, cont);
@@ -198,7 +210,7 @@ var Interpreter = (function() {
       // define lambda shorthand
       if(first_arg instanceof LISP.Pair) {
         var key = first_arg.first().value,
-            body = new LISP.Pair(new LISP.Symbol("begin"), list.rest()),
+            body = list.rest(),
             lambda = new LISP.Lambda(first_arg.rest(), body, cont.env)
         
         cont.env.set(key, lambda);
@@ -228,7 +240,7 @@ var Interpreter = (function() {
     "let": LISP.Builtin(function(list, cont) {
     
       var args = list.first(),
-          body = new LISP.Pair(new LISP.Symbol("begin"), list.rest());
+          body = list.rest();
             
       return (function bind(args, bind_env) {
         
@@ -245,7 +257,7 @@ var Interpreter = (function() {
             return bind(rest_pairs, bind_env);
             
           else
-            return LISP.Continuation(body, bind_env, cont);
+            return EvalMultiple(body, bind_env, cont);
                       
         });
       })(args, new LISP.Environment(cont.env));
@@ -299,7 +311,7 @@ var Interpreter = (function() {
       
       var args = list.first(),
           // allow multiple function bodies
-          body = new LISP.Pair(new LISP.Symbol("begin"), list.rest());
+          body = list.rest();
           
       return cont(new LISP.Lambda(args, body, cont.env));
     }),
@@ -308,19 +320,7 @@ var Interpreter = (function() {
     // return wert  
     
     "begin": LISP.Builtin(function(list, cont) {
-    
-      function process_lines(lines) {
-      
-        if(lines.rest() instanceof LISP.Pair)
-          return LISP.Continuation(lines.first(), cont.env, function(value) {
-            return process_lines(lines.rest());
-          });
-        
-        else 
-          return LISP.Continuation(lines.first(), cont.env, cont);
-       
-      }
-      return process_lines(list);
+      return EvalMultiple(list, cont.env, cont);
     }),
     
     "call/cc": LISP.Builtin(function(list, cont) {
@@ -355,7 +355,7 @@ var Interpreter = (function() {
     }),
     
     "inspect": LISP.Builtin(function(list, cont) {
-      (!!window && window.console || configs.console).log(list, env);
+      (!!window && window.console || configs.console).log(list, cont);
       return cont(LISP.nil);
     }),
     
@@ -415,6 +415,54 @@ var Interpreter = (function() {
     });
   }
   
+  
+  // Evaluates each item of the list and returns a new list, with the evaluated
+  // results
+  // Used by lambda to eval all passed arguments
+  function EvalEachInList(args, env, cont) {
+        
+      function Helper(args, evaled_values, cont) {          
+      
+        if(args instanceof LISP.Pair)        
+          return LISP.Continuation(args.first(), env, function(value) {
+            evaled_values.push(value);
+            return Helper(args.rest(), evaled_values, cont);    
+          });
+        
+        else return cont(evaled_values);
+        
+     }
+      
+     return Helper(args, [], function(evaled_values) {
+       
+       // convert array to lisp-list (reverted)         
+       var list = LISP.nil;
+       
+       for(var i=evaled_values.length-1;i>=0;i--)
+         list = new LISP.Pair(evaled_values[i], list);
+       
+       return cont(list);
+     });
+  }
+  
+  // Is used by lambda-evaluation, begin and let
+  function EvalMultiple(list, env, cont) {
+    function process_lines(lines) {
+    
+      if(lines.rest() instanceof LISP.Pair)
+        return LISP.Continuation(lines.first(), env, function(value) {
+          return process_lines(lines.rest());
+        });
+      
+      else 
+        return LISP.Continuation(lines.first(), env, cont);
+     
+    }
+    return process_lines(list);
+  }
+  
+  
+  
   // Evaluators
   
   /**
@@ -460,32 +508,6 @@ var Interpreter = (function() {
         
       });
     }    
-    
-    function EvalEachInList(args, env, cont) {
-        
-        function Helper(args, evaled_values, cont) {          
-        
-          if(args instanceof LISP.Pair)        
-            return LISP.Continuation(args.first(), env, function(value) {
-              evaled_values.push(value);
-              return Helper(args.rest(), evaled_values, cont);    
-            });
-          
-          else return cont(evaled_values);
-          
-       }
-        
-       return Helper(args, [], function(evaled_values) {
-         
-         // convert array to lisp-list (reverted)         
-         var list = LISP.nil;
-         
-         for(var i=evaled_values.length-1;i>=0;i--)
-           list = new LISP.Pair(evaled_values[i], list);
-         
-         return cont(list);
-       });
-    }    
 
 
     /**
@@ -502,7 +524,7 @@ var Interpreter = (function() {
     var lambda_env = new LISP.Environment(lambda.defined_env);
             
     return BindArgs(lambda.args, call_args, lambda_env, cont.env, function(bindings) {
-      return LISP.Continuation(lambda.body, bindings, cont);
+      return EvalMultiple(lambda.body, bindings, cont);
     });
   }
   
@@ -569,8 +591,9 @@ var Interpreter = (function() {
    */
   function Trampoline(cont) {
        
-    while(typeof cont == "function" && cont.type == "Continuation")
+    while(typeof cont == "function" && cont.type == "Continuation") {
       cont = Eval(cont.list, cont);
+    }
           
     return cont;    
   };
@@ -639,8 +662,7 @@ var Interpreter = (function() {
             process_next(Trampoline(cont));
         } catch(e) {
           error_callback(e);
-        }
-        
+        }        
       }
       
       // start asynchronous processing, i.e. wait for next free slice

@@ -1,6 +1,7 @@
 var InterpreterAdapter = function(callback){
 
-  var worker_wanted = true;
+  var worker_wanted = true,
+      debug = false;
 
   // if worker are supported - see worker.js
   if(!!window.Worker) {
@@ -36,13 +37,25 @@ var InterpreterAdapter = function(callback){
       Interpreter.read_all(string, function(msg) {
         callback(['response', msg.result + "<time>"+msg.total+" ms</time>"]);
       }, function(e) {
-        callback(['error', e]);
+        if(!debug)
+          callback(['error', e]);
+        else
+          window.console.error(e);
       });  
   };
   
   interpreter.worker = function(on_off) {
     worker_wanted = !!on_off;
-  }
+  };
+  
+  interpreter.debug = function() {
+    worker_wanted = false;
+    debug = true;
+    Interpreter.configure({
+      coop: false,
+      console: window.console
+    });
+  };
   
   return interpreter;
 };

@@ -185,13 +185,6 @@ function post(cmd, blind, response /* passed in when echoing from remote console
   pos = history.length;
 }
 
-function worker(value) {
-  value = value == 'true';
-
-  Interpreter.worker(value);
-  return "Trying to turn workers " + (value? "on" : "off");  
-}
-
 function log(msg, className) {
   var li = document.createElement('li'),
       div = document.createElement('div');
@@ -300,12 +293,45 @@ function show_system_configs() {
   return "Interpreter's System configs: ";
 }
 
+function worker(value) {
+  value = value == 'true';
+
+  Interpreter.worker(value);
+  return show_system_configs(); 
+}
+
+function debug() {
+  Interpreter.debug();
+  return "Going into debug mode, please open your browser's console.";
+}
+
+function coop(value) {
+  setTimeout(function() {
+    Interpreter("(set-coop "+value+")");
+  }, 15);
+  
+  return show_system_configs();
+}
+
+function reset() {
+  setTimeout(function() {
+    Interpreter("(reset)");
+  }, 15);
+  
+  return "Resetted system-environment, only builtins are kept."
+}
+
 function showhelp() {
   var commands = [
     ':about',
     ':clear - to clear the history (accessed using cursor keys)',
     ':history - list current session history',
-    ':system - get informations about the interpreter'
+    '',
+    ':system - get informations about the interpreter',
+    ':worker true/false - turn the use of webworkers on/off (these are two separate environments)',
+    ':coop true/false - use cooperative multitasking (only required, if workers are not supported). May slow down performance.',
+    ':reset - resets the environment and restores only builtin functions.',
+    ':debug'
   ];
   
   // commands = commands.concat([
@@ -569,8 +595,11 @@ var exec = document.getElementById('exec'),
       help: showhelp, 
       about: about,
       worker: worker,
+      coop: coop,
       history: showHistory,
       system: show_system_configs,
+      debug: debug,
+      reset: reset,
       clear: function () {
         setTimeout(function () { output.innerHTML = ''; }, 10);
         return 'clearing...';

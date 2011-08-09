@@ -118,7 +118,7 @@
     test_interpreter("((lambda (n m) (- n m)) 5 6)", "-1");
     
     // multiple commands (like begin)
-    test_interpreter("((lambda (n) (set! n (+ n 1)) (set! n (* n 2)) n) 4)", 10);
+    test_interpreter("((lambda (n) (set! n (+ n 1)) (set! n (* n 2)) n) 4)", "10");
   });
   
   test("let", function() {
@@ -210,7 +210,7 @@
     test_interpreter("(return 5)", "6");
     test_interpreter("foo", "10");    
   });
-  /*
+  
   test("Tail call optimization", function() {
     Interpreter.go("(define (count-define n) (if (le? n 0) 0 (count-define (- n 1))))");
     // should exceed stack size
@@ -228,7 +228,7 @@
     Interpreter.go("(define (test-h n) (test-f (- n 2)))");
     test_interpreter("(test-f 50000)","0");
   });
-  */
+
   test("Lambdas with var-args", function(){
     test_interpreter("((lambda (a b c . d) a) 1 2 3 4 5 6)", "1");
     test_interpreter("((lambda (a b c . d) b) 1 2 3 4 5 6)", "2");
