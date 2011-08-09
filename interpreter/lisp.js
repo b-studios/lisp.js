@@ -45,6 +45,12 @@ LISP.Quoted = function(value) {
   this.type = "Quoted";
 };
 
+LISP.BackQuote = function(value) {
+  this.value = value;
+  this.to_s = function() { return "," + this.value; };
+  this.type = "BackQuote";
+};
+
 LISP.Symbol = function(value) {
   this.value = value;
   this.to_s = function() { return "" + this.value; };
@@ -69,6 +75,13 @@ LISP.Lambda = function(args, body, defined_env) {
   this.defined_env = defined_env;
   this.type = "Lambda";  
   this.to_s = function() { return "&lt;Userdefined Function&gt;" };
+};
+
+LISP.Macro = function(args, body) {
+  this.args = args;
+  this.body = body;
+  this.type = "Macro";
+  this.to_s = function() { return "&lt;Userdefined Macro&gt;"; }
 };
 
 /**
@@ -150,7 +163,8 @@ LISP.Continuation = function(list, env, cont) {
   cont.list            = list;
   cont.type = "Continuation";
   return cont;
-}
+};
+
 
 LISP.Builtin = function(method) {  
   method.to_s = function() { return "&lt;Native Function&gt;"; }

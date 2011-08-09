@@ -8,6 +8,7 @@ Features
 - tco durch trampolining
 - call/cc
 - cooperative multitasking oder webworkers
+- all calculations work with multiple arguments
 
 
 Builtins

@@ -212,7 +212,7 @@ var Interpreter = (function() {
         var key = first_arg.first().value,
             body = list.rest(),
             lambda = new LISP.Lambda(first_arg.rest(), body, cont.env)
-        
+        d
         cont.env.set(key, lambda);
         return cont(lambda); 
       
@@ -314,6 +314,26 @@ var Interpreter = (function() {
           body = list.rest();
           
       return cont(new LISP.Lambda(args, body, cont.env));
+    }),
+    
+    "defmacro": LISP.Builtin(function(list, cont){
+    
+      var name = list.first(),   // It has to be a symbol
+          args = list.second(),  // list
+          body = list.third();
+          
+      return LISP.Continuation(body, cont.env, function(macro_body) {
+      
+        console.log("Macro body:", macro_body);
+      
+        var macro = new LISP.Macro(args, macro_body);
+        cont.env.set(name.value, macro);
+        return cont(macro);      
+      });
+    }),
+    
+    "macroexpand": LISP.Builtin(function(list, cont) {
+//      return cont(Expand(list,
     }),
   
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
@@ -420,6 +440,30 @@ var Interpreter = (function() {
   }
   
   
+  
+  function Expand(list, env) {
+  
+    // The only thing we do is, to search for BackQuotes and resolve them with
+    // env
+    if(list instanceof LISP.Pair) {
+      return new LISP.Pair(Expand(list.first(), env), Expand(list.rest(), env));
+       
+            
+    // it's a BackQuote
+    } else if(list instanceof LISP.BackQuote) { 
+      var resolved = env.get(list.value);
+
+      if(resolved == undefined)
+        throw "cannot expand '"+ list.value +"'";
+      
+      return resolved;
+    
+    // something else
+    } else {
+      return list;
+    }
+  }
+  
   // Evaluates each item of the list and returns a new list, with the evaluated
   // results
   // Used by lambda to eval all passed arguments
@@ -511,9 +555,9 @@ var Interpreter = (function() {
         else throw("Lambda called with wrong number of arguments.");
         
       });
-    }    
-
-
+    }
+    
+    
     /**
      * - args
      * - body
@@ -533,6 +577,24 @@ var Interpreter = (function() {
   }
   
   
+  // The call_args are not evaluated in a macro, their lists, are simply bound to
+  // the macro's arguments (which can be access via backquote only)
+  function EvalMacro(macro, call_args, cont) {
+  
+    var macro_env = LISP.Environment(null),
+        value_rest = call_args,
+        key_rest = macro.args;
+  
+    // just bind call_args to macro's args    
+    while(key_rest instanceof LISP.Pair && value_rest instanceof LISP.Pair) {
+      macro_env.set(key_rest.first().value, value_rest.first());
+      key_rest   = key_rest.rest();
+      value_rest = value_rest.rest();    
+    }
+    
+    // first expand macro with macro_env, then eval it
+    return LISP.Continuation(Expand(macro.body, macro_env), cont.env, cont);
+  } 
   
   /**
    * @function .Eval
@@ -553,6 +615,10 @@ var Interpreter = (function() {
         // oh there is a lambda-definition in function_slot
         if(function_slot instanceof LISP.Lambda) 
           return EvalLambda(function_slot, rest_list, cont);
+        
+        // wow, a macro - let's eval it!  
+        if(function_slot instanceof LISP.Macro) 
+          return EvalMacro(function_slot, rest_list, cont);
         
         // It's a continuation, so eval the first argument and call the continuation with it
         if(function_slot instanceof Function && function_slot.type == 'Continuation')

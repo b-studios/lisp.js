@@ -28,6 +28,9 @@ var Parser = function(string) {
     
     if(scanner.peekEquals("'"))
       return readQuoted();
+      
+    if(scanner.peekEquals(","))
+      return readBackquote();
     
     if(scanner.peekEquals('"'))
       return readString();
@@ -54,6 +57,14 @@ var Parser = function(string) {
     // Werden Listen mit Quote nicht auch gequoted?? So wie '(list . foo)
     //var quoteValue = scanner.until(['(',')'].concat(whitespaces));
     return new LISP.Quoted(read());
+  }
+  
+  function readBackquote() {
+    scanner.consume(",");    
+    var breakingChars = ['(',')'].concat(whitespaces);        
+    var value = scanner.until(breakingChars);
+     
+    return new LISP.BackQuote(value);  
   }
   
   function readString() {
