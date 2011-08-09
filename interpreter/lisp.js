@@ -72,7 +72,7 @@ LISP.Quoted = function(value) {
 
 LISP.BackQuote = function(value) {
   this.value = value;
-  this.to_s = function() { return "," + this.value; };
+  this.to_s = function() { return "," + this.value.to_s(); };
   this.type = "BackQuote";
 };
 

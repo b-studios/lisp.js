@@ -60,11 +60,9 @@ var Parser = function(string) {
   }
   
   function readBackquote() {
-    scanner.consume(",");    
-    var breakingChars = ['(',')'].concat(whitespaces);        
-    var value = scanner.until(breakingChars);
+    scanner.consume(",");
      
-    return new LISP.BackQuote(value);  
+    return new LISP.BackQuote(read());  
   }
   
   function readString() {
