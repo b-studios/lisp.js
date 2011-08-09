@@ -115,8 +115,7 @@ var Parser = function(string) {
     var breakingChars = ['(',')'].concat(whitespaces);        
     var atom = scanner.until(breakingChars); 
       
-    // Einfacher mit Regexp
-    if(atom.match(/^(\d+)|(\d+\.\d*)|(\d*\.\d+)$/))
+    if(atom.match(/^[\+\-]?((\d+)|(\d+\.\d*)|(\d*\.\d+))$/))
       return new LISP.Number(atom);
       
     else if(atom.match(/nil/))

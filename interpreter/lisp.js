@@ -54,44 +54,44 @@ LISP.Pair = function(first, rest) {
 
 LISP.Number = function(value) {
   this.value = Number(value);
-  this.to_s = function() { return "" + this.value; };
-  this.type = "Number";
+  this.to_s  = function() { return "" + this.value; };
+  this.type  = "Number";
 };
 
 LISP.String = function(value) {
   this.value = value;
-  this.to_s = function() { return '"' + this.value + '"'; };
-  this.type = "String";
+  this.to_s  = function() { return '"' + this.value + '"'; };
+  this.type  = "String";
 };
 
 LISP.Quoted = function(value) {
   this.value = value;
-  this.to_s = function() { return "'" + this.value.to_s(); };
-  this.type = "Quoted";
+  this.to_s  = function() { return "'" + this.value.to_s(); };
+  this.type  = "Quoted";
 };
 
 LISP.BackQuote = function(value) {
   this.value = value;
-  this.to_s = function() { return "," + this.value.to_s(); };
-  this.type = "BackQuote";
+  this.to_s  = function() { return "," + this.value.to_s(); };
+  this.type  = "BackQuote";
 };
 
 LISP.Symbol = function(value) {
   this.value = value;
-  this.to_s = function() { return "" + this.value; };
-  this.type = "Symbol";
+  this.to_s  = function() { return "" + this.value; };
+  this.type  = "Symbol";
 };
 
 LISP.Boolean = function(value) {
   this.value = !!value;
-  this.to_s = function() { return "" + this.value; };
-  this.type = "Boolean";
+  this.to_s  = function() { return "" + this.value; };
+  this.type  = "Boolean";
 };
 
 LISP.Nil = function() {
   this.value = "nil";
-  this.to_s = function() { return "nil" };
-  this.type = "Nil";  
+  this.to_s  = function() { return "nil" };
+  this.type  = "Nil";  
 };
 
 LISP.Lambda = function(args, body, defined_env) {
@@ -109,21 +109,6 @@ LISP.Macro = function(args, body) {
   this.to_s = function() { return "&lt;Userdefined Macro&gt;"; }
 };
 
-/**
- * Environment is a perfect usecase for prototypal inheritence
- * But if we wan't to include methods, like setting multiple bindings at once
- * this method could be overwritten by a binding.
- *
- * Normal use could look like
- * 
- *    var env = new LISP.Environment(null);
- *    env.foo = 4;
- *    env.bar = 5;
- *    env.bar //=> 5
- *
- *    var env2 = LISP.Environment(env);
- *    env2.baz = 6;
- */
 LISP.Environment = function(parent) {
   
   var store = {};
@@ -183,9 +168,9 @@ LISP.Environment = function(parent) {
 
 LISP.Continuation = function(list, env, cont) {
   
-  cont.env             = env;
-  cont.to_s            = function() { return "&lt;Continuation&gt;" };
-  cont.list            = list;
+  cont.env  = env;
+  cont.to_s = function() { return "&lt;Continuation&gt;" };
+  cont.list = list;
   cont.type = "Continuation";
   return cont;
 };
@@ -211,7 +196,7 @@ LISP.True = new LISP.Boolean(true);
 
 LISP.False = new LISP.Boolean(false);
 
-LISP.nil= new LISP.Nil();
+LISP.nil = new LISP.Nil();
 
 LISP.compare = function(a,b) {
   if(a instanceof LISP.Pair && b instanceof LISP.Pair)

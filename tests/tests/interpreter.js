@@ -261,6 +261,5 @@
     // now let's write a macro and do the same with it
     Interpreter.go("(defmacro for (listspec body) '(each ,(car (cdr (cdr listspec))) (lambda (,(car listspec)) ,body)))");
     test_interpreter("(let ((sum 0)) (for (i in '(1 2 3)) (set! sum (+ sum i))) sum)", "6");
-
   });
 })();

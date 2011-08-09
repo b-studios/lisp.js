@@ -56,5 +56,20 @@
     test_parser( "'(Foo)", 
                  q(p(sym("Foo"), nil)) );
   });
+      
+  test("Numbers", function() {
+    
+    test_parser( "-5",
+                 n(-5) );
+                 
+    test_parser( "0",
+                 n(0) );
+    
+    test_parser( "0.5",
+                 n(0.5) );
+    
+    test_parser( "-0.5",
+                 n(-0.5) );             
+  });
         
 })();
