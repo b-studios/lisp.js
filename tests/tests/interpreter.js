@@ -36,11 +36,11 @@
   
   test("Lists", function() {
     test_interpreter("'(3)", "(3 . nil)");
-    test_interpreter("'(8 3)", "(8 . (3 . nil))");
-    test_interpreter("'(8 3 (4 8))", "(8 . (3 . ((4 . (8 . nil)) . nil)))");
+    test_interpreter("'(8 3)", "(8 3)");
+    test_interpreter("'(8 3 (4 8))", "(8 3 (4 8))");
     
     test_interpreter("(car '(8 4 3 2))", "8");
-    test_interpreter("(cdr '(8 4 3 2))", "(4 . (3 . (2 . nil)))");
+    test_interpreter("(cdr '(8 4 3 2))", "(4 3 2)");
   });
   
   test("Quote", function() {

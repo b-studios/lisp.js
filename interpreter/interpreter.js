@@ -324,8 +324,6 @@ var Interpreter = (function() {
           
       return LISP.Continuation(body, cont.env, function(macro_body) {
       
-        console.log("Macro body:", macro_body);
-      
         var macro = new LISP.Macro(args, macro_body);
         cont.env.set(name.value, macro);
         return cont(macro);      
@@ -333,7 +331,10 @@ var Interpreter = (function() {
     }),
     
     "macroexpand": LISP.Builtin(function(list, cont) {
-//      return cont(Expand(list,
+      // list.first should be a macro, list.rest() the argument list
+      return LISP.Continuation(list.first(), cont.env, function(macro) {
+        return cont(Expand(macro, list.rest()));
+      });
     }),
   
     // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
@@ -439,30 +440,6 @@ var Interpreter = (function() {
     });    
   }
   
-  
-  
-  function Expand(list, env) {
-  
-    // The only thing we do is, to search for BackQuotes and resolve them with
-    // env
-    if(list instanceof LISP.Pair) {
-      return new LISP.Pair(Expand(list.first(), env), Expand(list.rest(), env));
-       
-            
-    // it's a BackQuote
-    } else if(list instanceof LISP.BackQuote) { 
-      var resolved = env.get(list.value);
-
-      if(resolved == undefined)
-        throw "cannot expand '"+ list.value +"'";
-      
-      return resolved;
-    
-    // something else
-    } else {
-      return list;
-    }
-  }
   
   // Evaluates each item of the list and returns a new list, with the evaluated
   // results
@@ -579,22 +556,48 @@ var Interpreter = (function() {
   
   // The call_args are not evaluated in a macro, their lists, are simply bound to
   // the macro's arguments (which can be access via backquote only)
-  function EvalMacro(macro, call_args, cont) {
+  function EvalMacro(macro, call_args, cont) {    
+    // first expand macro with macro_env, then eval it
+    var expanded = Expand(macro, call_args);
+    console.log(expanded);
+    return LISP.Continuation(expanded, cont.env, cont);
+  } 
   
-    var macro_env = LISP.Environment(null),
+  function Expand(macro, call_args) {
+    
+    var expansion_env = LISP.Environment(null),
         value_rest = call_args,
         key_rest = macro.args;
-  
-    // just bind call_args to macro's args    
+    
+    // just bind call_args to expansion_env   
     while(key_rest instanceof LISP.Pair && value_rest instanceof LISP.Pair) {
-      macro_env.set(key_rest.first().value, value_rest.first());
+      expansion_env.set(key_rest.first().value, value_rest.first());
       key_rest   = key_rest.rest();
       value_rest = value_rest.rest();    
     }
     
-    // first expand macro with macro_env, then eval it
-    return LISP.Continuation(Expand(macro.body, macro_env), cont.env, cont);
-  } 
+    function Helper(list) {
+      // The only thing we do is, to search for BackQuotes and resolve them with
+      // env
+      if(list instanceof LISP.Pair)
+        return new LISP.Pair(Helper(list.first()), Helper(list.rest()));         
+              
+      // it's a BackQuote
+      else if(list instanceof LISP.BackQuote) { 
+        var resolved = expansion_env.get(list.value);
+
+        if(resolved == undefined)
+          throw "cannot expand '"+ list.value +"'";
+        
+        return resolved;
+      } 
+      
+      // something else
+      else return list;
+    }
+    
+    return Helper(macro.body);    
+  }
   
   /**
    * @function .Eval

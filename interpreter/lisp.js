@@ -22,7 +22,32 @@ LISP.Pair = function(first, rest) {
     return this.rest().rest().first();
   };
   
-  this.to_s = function() { return "(" + this[0].to_s() + " . " + this[1].to_s() + ")"; }
+  this.to_s = function(child_of_a_list) { 
+    
+    var we_are_list = (this[1] instanceof LISP.Pair);
+    
+    // we are a list inside of a list
+    if(we_are_list && !!child_of_a_list)
+      return this[0].to_s() + " " + this[1].to_s(true);
+    
+    // we are a list and our parent is not a list
+    else if(we_are_list && !child_of_a_list) 
+      return "(" + this[0].to_s() + " " + this[1].to_s(true) + ")";
+    
+    // we are not a list, but a child of a list  
+    else if(!we_are_list && !!child_of_a_list) {
+      
+      if(this[1] == LISP.nil)
+        return this[0].to_s();
+        
+      else
+        return "(" + this[0].to_s() + " . " + this[1].to_s() + ")";
+    
+    }
+    
+    else if(!we_are_list && !child_of_a_list)
+      return "(" + this[0].to_s() + " . " + this[1].to_s() + ")";
+  }
   
   this.type = "Pair";
 };
