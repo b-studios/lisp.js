@@ -177,11 +177,11 @@
   
   test("Work with Bindings", function() {
   
-    Interpreter.go("(define (bindings foo) (get-bindings))");
+    Interpreter.go("(define (bindings foo) (get-bindings true))");
     Interpreter.go("(define somebinding (bindings 5))");
-    test_interpreter("(eval (+ foo 6) somebinding)", "11");
+    test_interpreter("(eval '(+ foo 6) somebinding)", "11");
     test_interpreter("(defined? 'foo)", "false");
-    test_interpreter("(eval (defined? 'foo) somebinding)", "true");
+    test_interpreter("(eval '(defined? 'foo) somebinding)", "true");
   });
   
   /**

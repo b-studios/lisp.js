@@ -71,9 +71,30 @@ var Interpreter = (function() {
       return cont(cont.env);
     }),
     
+    // returns an empty environment, if argument evals to true a connection
+    // to globals is made
+    "empty-binding": LISP.Builtin(function(list, cont) {
+      
+      if(list instanceof LISP.Pair && list.first() !== LISP.nil)
+        return LISP.Continuation(list.first(), cont.env, function(first_arg) {
+          if(!!first_arg.value)
+            return cont(LISP.Environment(__GLOBAL__));
+          
+          else
+            return cont(LISP.Environment(null));      
+        });
+      
+      return cont(LISP.Environment(null));
+    }),
+    
     "eval": LISP.Builtin(function(list, cont) {
       
+      // first time eval in outer environment, then eval in given environment
+      
+      /*
       var evaluate = function(env) {
+      
+        
       
         if(env.type !== 'Environment')
           throw(env.to_s() + " is not an environment, and cannot be used for evaluation.");
@@ -89,7 +110,13 @@ var Interpreter = (function() {
       if(list.second() !== LISP.nil)
         return LISP.Continuation(list.second(), cont.env, evaluate);
       
-      else return evaluate(cont.env);      
+      else return evaluate(cont.env);      */
+      
+      return LISP.Continuation(list.first(), cont.env, function(first_pass) {
+        return LISP.Continuation(list.second(), cont.env, function(environment) {
+          return LISP.Continuation(first_pass, environment, cont);
+        });
+      });      
     }),
     
       
@@ -311,7 +338,7 @@ var Interpreter = (function() {
     "macroexpand": LISP.Builtin(function(list, cont) {
       // list.first should be a macro, list.rest() the argument list
       return LISP.Continuation(list.first(), cont.env, function(macro) {
-        return Expand(macro, list.rest(), cont);
+        return MacroExpand(macro, list.rest(), cont);
       });
     }),
   
@@ -350,7 +377,9 @@ var Interpreter = (function() {
     }),
     
     "error": LISP.Builtin(function(list, cont) {
-      throw (list.first().to_s());
+      return LISP.Continuation(list.first(), cont.env, function(evaled) {
+        throw (evaled.to_s());
+      });
     }),
     
     "inspect": LISP.Builtin(function(list, cont) {
@@ -420,43 +449,48 @@ var Interpreter = (function() {
     });    
   }
   
-  function Expand(macro, call_args, cont) {
+  function MacroExpand(macro, call_args, cont) {
     
     var expansion_env = LISP.Environment(__GLOBAL__),
         value_rest = call_args,
         key_rest = macro.args;
-    
-    function Helper(list, cont) {
-    
-      // The only thing we do is, to search for BackQuotes and eval them in our 
-      // expansion environment
-      if(list instanceof LISP.Pair)
-        return Helper(list.first(), function(first_el) {
-          return Helper(list.rest(), function(rest_el) {
-            return cont(new LISP.Pair(first_el, rest_el)); 
-          });
-        });
-              
-      // it's a BackQuote
-      else if(list instanceof LISP.BackQuote)
-        return LISP.Continuation(list.value, expansion_env, cont);
-      
-      // something else
-      else return cont(list);
-    }    
     
     // just bind call_args to expansion_env   
     while(key_rest instanceof LISP.Pair && value_rest instanceof LISP.Pair) {
       expansion_env.set(key_rest.first().value, value_rest.first());
       key_rest   = key_rest.rest();
       value_rest = value_rest.rest();    
+    }    
+
+    // bind varargs
+    if(key_rest instanceof LISP.Symbol && value_rest instanceof LISP.Pair) {
+      expansion_env.set(key_rest.value, value_rest);
     }
     
     // eval first time in expansion environment
-    return LISP.Continuation(macro.body, expansion_env, function(macro_body) {
+    return LISP.Continuation(macro.body, expansion_env, function(evaled_body) {
       // now expand
-      return Helper(macro_body, cont);    
+      return Expand(evaled_body, expansion_env, cont);    
     });
+  }
+  
+  function Expand(list, env, cont) {
+     
+    // The only thing we do is, to search for BackQuotes and eval them in our 
+    // expansion environment
+    if(list instanceof LISP.Pair)
+      return Expand(list.first(), env, function(first_el) {
+        return Expand(list.rest(), env, function(rest_el) {
+          return cont(new LISP.Pair(first_el, rest_el)); 
+        });
+      });
+            
+    // it's a BackQuote
+    else if(list instanceof LISP.BackQuote)
+      return LISP.Continuation(list.value, env, cont);
+    
+    // something else
+    else return cont(list);
   }
   
   // Evaluates each item of the list and returns a new list, with the evaluated
@@ -545,7 +579,7 @@ var Interpreter = (function() {
           return cont(bind_env);
         }
         
-        // everything went find
+        // everything went fine
         if(keys_rest === LISP.nil && values_rest === LISP.nil)
           return cont(bind_env);
         
@@ -564,7 +598,7 @@ var Interpreter = (function() {
   // the macro's arguments (which can be access via backquote only)
   function EvalMacro(macro, call_args, cont) {    
     // first expand macro with macro_env
-    return Expand(macro, call_args, function(expanded) {
+    return MacroExpand(macro, call_args, function(expanded) {
       // now eval expanded version
       return LISP.Continuation(expanded, cont.env, cont); 
     });
@@ -616,7 +650,7 @@ var Interpreter = (function() {
       
     // it's quoted, let's reveal the content
     } else if(list instanceof LISP.Quoted) { 
-      return cont(list.value);
+      return Expand(list.value, cont.env, cont);
       
     // it's some Atom
     } else {      
