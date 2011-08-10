@@ -66,7 +66,13 @@ var Interpreter = (function() {
     "quote": LISP.Builtin(function(list, cont) {
       return cont(list.first());
     }),    
-    
+    /*
+    "clone-bindings": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(evaled_bindings) {
+        return cont(LISP.Environment(evaled_bindings));          
+      });
+    }),
+    */
     "get-bindings": LISP.Builtin(function(list, cont) {
       return cont(cont.env);
     }),
@@ -384,7 +390,7 @@ var Interpreter = (function() {
     
     "inspect": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(evaled) {
-        (!!window && window.console || configs.console).log(evaled, cont);
+        (!!window && window.console || configs.console).log(evaled);
         return cont(LISP.nil);
       });
     }),
@@ -463,7 +469,7 @@ var Interpreter = (function() {
     }    
 
     // bind varargs
-    if(key_rest instanceof LISP.Symbol && value_rest instanceof LISP.Pair) {
+    if(key_rest instanceof LISP.Symbol) {
       expansion_env.set(key_rest.value, value_rest);
     }
     
@@ -526,6 +532,9 @@ var Interpreter = (function() {
   function EvalMultiple(list, env, cont) {
     function process_lines(lines) {
     
+      if(!(lines instanceof LISP.Pair))
+        return LISP.Continuation(lines, env, cont);
+        
       if(lines.rest() instanceof LISP.Pair)
         return LISP.Continuation(lines.first(), env, function(value) {
           return process_lines(lines.rest());
@@ -551,15 +560,14 @@ var Interpreter = (function() {
    * i.e. LISP.Symbol or LISP.nil
    */
   function EvalLambda(lambda, call_args, cont) {
-       
+    
     var lambda_env = new LISP.Environment(lambda.defined_env);    
 
     function BindArgs(key_args, value_args, bind_env, eval_env, cont) {
       
       // empty arguments
-      if(key_args.first() == LISP.nil)
-        return cont(bind_env);    
-        
+      if(value_args == LISP.nil || key_args instanceof LISP.Pair && key_args.first() == LISP.nil)
+        return cont(bind_env);
       
       // eval all value-arguments
       return EvalEachInList(value_args, eval_env, function(values) {
@@ -573,8 +581,8 @@ var Interpreter = (function() {
           keys_rest   = keys_rest.rest();        
         }
         
-        // bind varargs
-        if(keys_rest instanceof LISP.Symbol && values_rest instanceof LISP.Pair) {
+        // bind varargs        
+        if(keys_rest instanceof LISP.Symbol) {
           bind_env.set(keys_rest.value, values_rest);
           return cont(bind_env);
         }
@@ -583,7 +591,7 @@ var Interpreter = (function() {
         if(keys_rest === LISP.nil && values_rest === LISP.nil)
           return cont(bind_env);
         
-        else throw("Lambda called with wrong number of arguments.");
+        else throw("Lambda called with wrong number of arguments. Lambdabody: "+ lambda.body.to_s());
         
       });
     }
@@ -600,7 +608,7 @@ var Interpreter = (function() {
     // first expand macro with macro_env
     return MacroExpand(macro, call_args, function(expanded) {
       // now eval expanded version
-      return LISP.Continuation(expanded, cont.env, cont); 
+      return LISP.Continuation(expanded, cont.env, cont);
     });
   } 
   
@@ -643,9 +651,10 @@ var Interpreter = (function() {
     } else if(list instanceof LISP.Symbol) { 
       var resolved = env.get(list.value);
 
-      if(resolved == undefined)
+      if(resolved == undefined) {
+        console.log(env);
         throw "cannot resolve symbol '"+ list.value +"'";
-        
+      }
       return cont(resolved);
       
     // it's quoted, let's reveal the content
