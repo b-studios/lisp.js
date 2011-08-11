@@ -24,7 +24,9 @@ var Interpreter = (function() {
         if(value == LISP.True)
           return cont(LISP.nil);
         else
-          throw "Assertion failure: " + list.second().to_s();
+          return LISP.Continuation(list.second(), cont.env, function(msg) {
+            throw "Assertion failure: " + msg.to_s();   
+          });
       });    
     }),
     
@@ -65,32 +67,10 @@ var Interpreter = (function() {
          
     "quote": LISP.Builtin(function(list, cont) {
       return cont(list.first());
-    }),    
-    /*
-    "clone-bindings": LISP.Builtin(function(list, cont) {
-      return LISP.Continuation(list.first(), cont.env, function(evaled_bindings) {
-        return cont(LISP.Environment(evaled_bindings));          
-      });
-    }),
-    */
-    "get-bindings": LISP.Builtin(function(list, cont) {
-      return cont(cont.env);
     }),
     
-    // returns an empty environment, if argument evals to true a connection
-    // to globals is made
-    "empty-binding": LISP.Builtin(function(list, cont) {
-      
-      if(list instanceof LISP.Pair && list.first() !== LISP.nil)
-        return LISP.Continuation(list.first(), cont.env, function(first_arg) {
-          if(!!first_arg.value)
-            return cont(LISP.Environment(__GLOBAL__));
-          
-          else
-            return cont(LISP.Environment(null));      
-        });
-      
-      return cont(LISP.Environment(null));
+    "get-bindings": LISP.Builtin(function(list, cont) {
+      return cont(cont.env);
     }),
     
     "eval": LISP.Builtin(function(list, cont) {
@@ -130,26 +110,7 @@ var Interpreter = (function() {
     "%": LISP.Builtin(function(list, cont) {
       return Calculate(list, cont, function(a,b) { return a%b; });
     }),
-    
-    // (if cond if-part else-part)
-    "if": LISP.Builtin(function(list, cont) {
-      
-      return LISP.Continuation(list.first(), cont.env, function(condition) {
         
-        if(!(condition instanceof LISP.Boolean))
-          throw("Condition has to eval to boolean (got: " + condition.to_s() + ")");
-        
-        // if-part
-        if(!!condition.value) 
-          return LISP.Continuation(list.second(), cont.env, cont);
-        
-        // else-part
-        else 
-          return LISP.Continuation(list.third(), cont.env, cont);
-      });
-    
-    }),
-    
     
     // @group Logical Operators
     
@@ -351,6 +312,25 @@ var Interpreter = (function() {
         
     
     // @group Program flow
+    
+    "if": LISP.Builtin(function(list, cont) {
+      
+      return LISP.Continuation(list.first(), cont.env, function(condition) {
+        
+        if(!(condition instanceof LISP.Boolean))
+          throw("Condition has to eval to boolean (got: " + condition.to_s() + ")");
+        
+        // if-part
+        if(!!condition.value) 
+          return LISP.Continuation(list.second(), cont.env, cont);
+        
+        // else-part
+        else 
+          return LISP.Continuation(list.third(), cont.env, cont);
+      });
+    
+    }),
+
     
     "lambda": LISP.Builtin(function(list, cont) {
       

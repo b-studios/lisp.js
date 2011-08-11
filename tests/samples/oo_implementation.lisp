@@ -140,17 +140,7 @@
    )
 )
 
-
-
-
-
-
-
-
-
-
-
-
+;; --------------------------------- Examples ----------------------------------
 
 
 (class Person
@@ -216,3 +206,7 @@
 (jona_stud 'say_hello)
 (jona_stud 'say_hello_to homer)
 (homer 'say_hello_to jona_stud)
+
+; Use the accessor
+(jona 'name= "Fudel")
+(jona 'say_hello)
