@@ -323,6 +323,10 @@ function reset() {
 
 function showhelp() {
   var commands = [
+    'Thanks for using lisp.js',
+    '',,
+    'You can find some more information at <a href="https://github.com/b-studios/lisp.js">github</a>, on the <a href="https://github.com/b-studios/lisp.js/wiki/">wiki-pages</a> and in the list of <a href="https://github.com/b-studios/lisp.js/wiki/Builtin-Functions">builtin functions</a>',
+    '',
     ':about',
     ':clear - to clear the history (accessed using cursor keys)',
     ':history - list current session history',
