@@ -1,0 +1,18 @@
+CACHE MANIFEST
+
+CACHE:
+index.html
+interpreter/interpreter.js
+interpreter/lisp.js
+interpreter/parser.js
+interpreter/stringscanner.js
+jsconsole/console.css
+jsconsole/console.js
+jsconsole/interpreter_adapter.js
+jsconsole/iphone.css
+jsconsole/worker.js
+
+NETWORK:
+*
+
+# 2011-08-11
