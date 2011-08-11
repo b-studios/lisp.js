@@ -23,7 +23,7 @@ Builtins
 Throws an exception containing MSG if CONDITION evaluates to `false`.
 
     (assert false "My Exception")
-    ;-> ERROR: My Exception
+    ; ERROR: My Exception
 
 
 List Manipulation
@@ -65,7 +65,7 @@ Returns the current binding (= LISP.Environment)
     (eval 'n ((lambda (n) (get-bindings)) 2))
     ;-> 2
 
-### eval LIST [ENV] #
+### eval LIST ENV? #
 Evals the given LIST. If the optional parameter ENV is given, this environment
 is used to eval LIST.
     
@@ -79,11 +79,11 @@ Mathematical Operators
 There are a bunch of mathematical operators. All of them can be used with a variable
 number of arguments (i.e. `(+ 1 2 3 4 5 6)` is supported).
 
-### + ARG1 *ARGS #
-### - ARG1 *ARGS #
-### * ARG1 *ARGS #
-### / ARG1 *ARGS #
-### % ARG1 *ARGS #
+### + ARG1 ARGS* #
+### - ARG1 ARGS* #
+### * ARG1 ARGS* #
+### / ARG1 ARGS* #
+### % ARG1 ARGS* #
 
 
 Logical Operators
@@ -156,7 +156,7 @@ Defines KEY (which has to be a symbol) as VALUE in the current environment.
     foo
     ;-> 1
     
-### define (KEY [ARG1] [ARG2] . [VARARGS]) *BODY #
+### define (KEY ARGS* . VARARGS?) BODY+ #
 Shorthand for `(define SYMBOL (lambda (args) body))`. As with `lambda`, `let` and
 `begin` define can take multiple bodies, which are evaluated one after another on
 execution.
@@ -164,10 +164,98 @@ execution.
     (define (say_hello name)
        (print "Hello!")
        (print name))
+       
+    (say_hello "Mister")
+    ; "Hello"
+    ; "Mister"
+    ;-> nil
+
+### defined? KEY #
+Returns `true` if KEY is defined in the current environment - otherwise `false` is
+returned.
+
+    (define foo 4)
+    (defined? foo)
+    ;-> true
+    
+    (defined? bar)
+    ;-> false
 
 ### set! KEY VALUE #
 Changes the defined value of KEY to VALUE. (KEY has to be already defined 
 somewhere in the environment chain!!)
+
+    (define foo 4)
+    (set! foo 7)
+    foo
+    ;-> 7
+    
+    (set! bar 8)
+    ; ERROR: bar is not defined, and cannot be set to 8
+
+### let ( (KEY VALUE)* ) BODY+ #
+A new temporary environment is created and for each key-value pair VALUE is bound
+to the KEY. Afterwards all bodies are evaluated in this environment and the last
+return-value is returned.
+
+    (let ( (Foo 3)
+           (Bar 2) )
+      (+ Foo Bar))
+    ;-> 5
+    
+### reset #
+Clears the global environment and resets it. Afterwards only the builtins are
+defined.
+
+    (define Foo 5)
+    (reset)
+    
+    (defined? Foo)
+    ;-> false
+    
+    (defined? +)
+    ;-> true
+
+
+Strings and Symbols
+-------------------
+To make it possible to work with string and convert them from / to symbols the following
+methods are available
+
+### to_s SYMBOL #
+Converts a symbol (or anything, that's got a value) to a string
+
+### to_sym STRING #
+Converts a string (or anything, that's got a value) to a symbol.
+
+### split STRING #
+Splits a string into a list of characters:
+
+    (split "Hello World")
+    ;-> '("H" "e" "l" "l" "o" " " "W" "o" "r" "l" "d")
+    
+### join LIST #
+Joins a list back to a string
+
+    (join '("H" "e" "l" "l" "o" " " "W" "o" "r" "l" "d"))
+    ;-> "Hello World"
+
+
+Introspection
+-------------
+
+### typeof ELEMENT #
+Returns a symbol, which describes the type of the ELEMENT.
+
+    (typeof 123)
+    ;-> 'Number
+    
+    (typeof 'Foo)
+    ;-> 'Symbol
+
+    
+Program Flow
+------------
 
 Working Examples
 ================

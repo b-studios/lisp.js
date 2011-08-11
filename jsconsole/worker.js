@@ -18,6 +18,8 @@ Interpreter.configure({
   
   coop: false,
   
+  worker: true,
+  
   console: {
     log: respond('log'),
   }

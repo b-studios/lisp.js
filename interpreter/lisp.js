@@ -149,7 +149,7 @@ LISP.Environment = function(parent) {
         parent.set_r(key, value);
         
       else
-        throw key + " is not defined, and cannot be set to " + value;
+        throw key + " is not defined, and cannot be set to " + value.to_s();
         
       return env;
     },

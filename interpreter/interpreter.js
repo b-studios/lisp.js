@@ -5,7 +5,7 @@ var Interpreter = (function() {
   
   var configs = {
     
-    worker: true,
+    worker: false,
     
     coop: true,
     
@@ -199,8 +199,6 @@ var Interpreter = (function() {
       }
     }),
     
-    // setzt erstes argument im aktuellen binding auf den wert des zweiten arguments
-    // liefert dann den Wert des zweiten Arguments zurueck
     "set!": LISP.Builtin(function(list, cont) {
     
       // evaluate second argument
@@ -330,7 +328,10 @@ var Interpreter = (function() {
       });
     
     }),
-
+    
+    "begin": LISP.Builtin(function(list, cont) {
+      return EvalMultiple(list, cont.env, cont);
+    }),
     
     "lambda": LISP.Builtin(function(list, cont) {
       
@@ -340,6 +341,8 @@ var Interpreter = (function() {
           
       return cont(new LISP.Lambda(args, body, cont.env));
     }),
+    
+    // @group Macros
     
     "defmacro": LISP.Builtin(function(list, cont) {      
       var macro = new LISP.Macro(list.second(), list.third());
@@ -353,13 +356,9 @@ var Interpreter = (function() {
         return MacroExpand(macro, list.rest(), cont);
       });
     }),
-  
-    // sollte liste durchgehen und jedes item einzeln evaluieren. returned letzten
-    // return wert  
     
-    "begin": LISP.Builtin(function(list, cont) {
-      return EvalMultiple(list, cont.env, cont);
-    }),
+    
+    // @group Continuations
     
     "call/cc": LISP.Builtin(function(list, cont) {
       // First argument of call/cc has to be a function
