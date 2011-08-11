@@ -62,6 +62,13 @@
          ; attr-reader
          (defmacro attr-reader (attr)
              '(def ,attr () (instance-variable-get (quote ,attr))))
+             
+         ; attr-accessor
+         (defmacro attr-accessor (attr)
+             '(begin
+                (def ,attr () (instance-variable-get (quote ,attr)))
+                (def ,(to_sym (+ (to_s attr) "=")) (,attr) (instance-variable-set (quote ,attr) ,attr))
+              ))
     ) instance-methods)
     
     ; add some class methods
@@ -148,7 +155,7 @@
 
 (class Person
   
-  (attr-reader name)
+  (attr-accessor name)
   (attr-reader age)
 
   ; constructor

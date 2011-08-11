@@ -290,6 +290,50 @@ var Interpreter = (function() {
     }),
     
     
+    // @group Strings and Symbols
+    
+    "to_s": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(symbol) {
+        return cont(new LISP.String(symbol.value));
+      });
+    }),
+    
+    "to_sym": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(string) {
+        return cont(new LISP.Symbol(string.value));
+      });
+    }),
+    
+    "split": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(string) {
+         
+         string = string.value;
+         
+         // Create LISP-list
+         var list = LISP.nil;
+         
+         for(var i=string.length-1;i>=0;i--)
+           list = new LISP.Pair(new LISP.String(string.charAt(i)), list);
+        
+        return cont(list);
+       });
+    }),
+    
+    "join": LISP.Builtin(function(list, cont) {
+      return LISP.Continuation(list.first(), cont.env, function(list) {
+        
+        function Helper(list, string) {
+          if(!(list instanceof LISP.Pair))
+            return string;
+          
+          return Helper(list.rest(), string + list.first().value);
+        }
+        
+        return cont(new LISP.String(Helper(list, "")));        
+      });
+    }),
+    
+    
     // @group Introspection
     
     "typeof": LISP.Builtin(function(list, cont) {

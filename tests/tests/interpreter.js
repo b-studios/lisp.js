@@ -59,6 +59,17 @@
   test("String Operations", function() {
     test_interpreter('(+ "Hallo " "Welt")', '"Hallo Welt"');
     test_interpreter('(+ "Die Antwort ist " 42)', '"Die Antwort ist 42"');
+    test_interpreter('(split "ABCDE")', '("A" "B" "C" "D" "E")');
+    test_interpreter('(join \'("A" "B" "C" "D" "E"))', '"ABCDE"');
+    test_interpreter('(join (split "ABCDE"))', '"ABCDE"');    
+  });
+  
+  test("Strings and Symbols", function() {
+    Interpreter.go("(define ABC 999)");
+    test_interpreter('(to_sym "ABC")', "ABC");
+    test_interpreter('(eval (to_sym "ABC"))', "999");
+    test_interpreter("(to_s 'ABC)", '"ABC"');
+    test_interpreter("(to_sym (to_s 'ABC))", "ABC");  
   });
   
   test("Comparators", function() {
