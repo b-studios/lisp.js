@@ -1,5 +1,6 @@
 First of all, check it out [here](http://lisp.b-studios.de).
-  
+
+  - [Wiki Mainpage](https://github.com/b-studios/lisp.js/wiki)  
   - [Builtins](https://github.com/b-studios/lisp.js/wiki/Builtin-Functions)
   - [Console commands](https://github.com/b-studios/lisp.js/wiki/Commands)
 
@@ -78,3 +79,7 @@ The tests (resources can be seen here at github) will also give you a brief over
 what can be done with lisp.js
 
 lisp.js is tested in Firefox 5, Chrome 13 and Internet Explorer 8/9 (though there are some layout and usability issues in IE)
+
+There are also some [samples](https://github.com/b-studios/lisp.js/wiki/Samples) you can checkout
+and a [Object Orientation Implemenation](https://github.com/b-studios/lisp.js/blob/master/tests/samples/oo_implementation.lisp) which works
+with lisp.js
