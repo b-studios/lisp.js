@@ -23,7 +23,7 @@ LISP.Pair = function(first, rest) {
   };
   
   this.to_s = function(child_of_a_list) { 
-    
+    /*
     var we_are_list = (this[1] instanceof LISP.Pair);
     
     // we are a list inside of a list
@@ -46,7 +46,8 @@ LISP.Pair = function(first, rest) {
     }
     
     else if(!we_are_list && !child_of_a_list)
-      return "(" + this[0].to_s() + " . " + this[1].to_s() + ")";
+      return "(" + this[0].to_s() + " . " + this[1].to_s() + ")";*/
+    return "(" + this[0].to_s() + " . " + this[1].to_s() + ")";
   }
   
   this.type = "Pair";

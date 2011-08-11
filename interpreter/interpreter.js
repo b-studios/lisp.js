@@ -95,33 +95,15 @@ var Interpreter = (function() {
     
     "eval": LISP.Builtin(function(list, cont) {
       
-      // first time eval in outer environment, then eval in given environment
-      
-      /*
-      var evaluate = function(env) {
-      
-        
-      
-        if(env.type !== 'Environment')
-          throw(env.to_s() + " is not an environment, and cannot be used for evaluation.");
-      
-        return LISP.Continuation(list.first(), env, function(first_pass) {
-          return LISP.Continuation(first_pass, env, function(second_pass) {
-            return cont(second_pass);
-          });
-        });
-      };
-      
-      // evaluate second argument - it's the binding
-      if(list.second() !== LISP.nil)
-        return LISP.Continuation(list.second(), cont.env, evaluate);
-      
-      else return evaluate(cont.env);      */
-      
       return LISP.Continuation(list.first(), cont.env, function(first_pass) {
-        return LISP.Continuation(list.second(), cont.env, function(environment) {
-          return LISP.Continuation(first_pass, environment, cont);
-        });
+        
+        if(list.rest() instanceof LISP.Pair)        
+          return LISP.Continuation(list.second(), cont.env, function(environment) {
+            return LISP.Continuation(first_pass, environment, cont);
+          });
+          
+        else        
+          return LISP.Continuation(first_pass, cont.env, cont);
       });      
     }),
     
@@ -583,7 +565,7 @@ var Interpreter = (function() {
         
         // bind varargs        
         if(keys_rest instanceof LISP.Symbol) {
-          bind_env.set(keys_rest.value, values_rest);
+          bind_env.set(keys_rest.value, values_rest || LISP.nil);
           return cont(bind_env);
         }
         
@@ -591,7 +573,7 @@ var Interpreter = (function() {
         if(keys_rest === LISP.nil && values_rest === LISP.nil)
           return cont(bind_env);
         
-        else throw("Lambda called with wrong number of arguments. Lambdabody: "+ lambda.body.to_s());
+        else throw("Lambda called with wrong number of arguments." + " \n  expected: "+lambda.args.to_s()+"\n  got: "+call_args.to_s()) +  "\n  Lambdabody: "+ lambda.body.to_s();
         
       });
     }
@@ -652,7 +634,6 @@ var Interpreter = (function() {
       var resolved = env.get(list.value);
 
       if(resolved == undefined) {
-        console.log(env);
         throw "cannot resolve symbol '"+ list.value +"'";
       }
       return cont(resolved);
