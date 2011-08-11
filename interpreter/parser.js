@@ -11,6 +11,9 @@ if(!(typeof String.prototype.trim == 'function')) {
  */ 
 var Parser = function(string) {    
   
+  // remove windows lineende sequences
+  var string = string.replace(/\r\n/g, "\n");
+  
   var whitespaces = ["\n","\t"," "];
   
   
@@ -134,7 +137,7 @@ var Parser = function(string) {
     else if(atom.match(/[^\s\(\)\,]+/))
       return new LISP.Symbol(atom);
       
-    else throw "Atom: Could not find right type for '"+ atom +"'";    
+    else throw("Atom: Could not find right type for '"+ atom +"'");
   }
 
   return {

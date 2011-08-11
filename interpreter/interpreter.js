@@ -25,7 +25,7 @@ var Interpreter = (function() {
           return cont(LISP.nil);
         else
           return LISP.Continuation(list.second(), cont.env, function(msg) {
-            throw "Assertion failure: " + msg.to_s();   
+            throw("Assertion failure: " + msg.to_s());
           });
       });    
     }),
@@ -49,7 +49,7 @@ var Interpreter = (function() {
         if(first_arg instanceof LISP.Pair)
           return cont(first_arg.first());
         
-        else throw "Cannot calculate car of " + first_arg.type + " " + first_arg.to_s();
+        else throw("Cannot calculate car of " + first_arg.type + " " + first_arg.to_s());
       });
     }),
          
@@ -58,7 +58,7 @@ var Interpreter = (function() {
         if(first_arg instanceof LISP.Pair)
           return cont(first_arg.rest());
         
-        else throw "Cannot calculate cdr of " + first_arg.type + " " + first_arg.to_s();
+        else throw("Cannot calculate cdr of " + first_arg.type + " " + first_arg.to_s());
       });
     }),    
      
@@ -365,7 +365,7 @@ var Interpreter = (function() {
       return LISP.Continuation(list.first(), cont.env, function(lambda) {
         
         if(!(lambda instanceof LISP.Lambda))
-          throw "call/cc has to be called with a Lambda as first argument";
+          throw("call/cc has to be called with a Lambda as first argument");
         
         // now bind the current continuation to the first argument of the lambda
         var lambda_env = new LISP.Environment(lambda.defined_env);
@@ -389,7 +389,7 @@ var Interpreter = (function() {
     
     "error": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(evaled) {
-        throw (evaled.to_s());
+        throw(evaled.to_s());
       });
     }),
     
@@ -427,7 +427,7 @@ var Interpreter = (function() {
         var comp = comparator(first_arg.value, second_arg.value);
           
         if(typeof comp != "boolean")
-          throw "can not compare " + first_arg + " and " + second_arg;
+          throw("can not compare " + first_arg + " and " + second_arg);
     
         return cont(comp? LISP.True : LISP.False);    
       });        
@@ -454,7 +454,7 @@ var Interpreter = (function() {
         else if(typeof result == "number")
           result = new LISP.Number(result);
           
-        else throw result + " is not a number or string";
+        else throw(result + " is not a number or string");
       }
       return cont(result);      
     });    
@@ -649,7 +649,7 @@ var Interpreter = (function() {
         if(function_slot instanceof Function && function_slot.type == 'Builtin')
           return function_slot(rest_list, cont);
         
-        throw "Try to exec non function " + function_slot.to_s();      
+        throw("Try to exec non function " + function_slot.to_s());
       });
       
     // it's an Symbol, that we want to resolve
@@ -657,7 +657,7 @@ var Interpreter = (function() {
       var resolved = env.get(list.value);
 
       if(resolved == undefined) {
-        throw "cannot resolve symbol '"+ list.value +"'";
+        throw("cannot resolve symbol '"+ list.value +"'");
       }
       return cont(resolved);
       
