@@ -361,26 +361,24 @@ var Interpreter = (function() {
     // @group Continuations
     
     "call/cc": LISP.Builtin(function(list, cont) {
-      // First argument of call/cc has to be a function
+      // First argument of call/cc has to be a function with one argument
       return LISP.Continuation(list.first(), cont.env, function(lambda) {
         
         if(!(lambda instanceof LISP.Lambda))
           throw("call/cc has to be called with a Lambda as first argument");
         
-        // now bind the current continuation to the first argument of the lambda
-        var lambda_env = new LISP.Environment(lambda.defined_env);
-        
-        lambda_env.set(lambda.args.first().value, cont);
-        
-        // eval body and continue        
-        return LISP.Continuation(lambda.body, lambda_env, cont);
+        return EvalLambda(lambda, new LISP.Pair(cont, LISP.nil), cont);        
       });
     }), 
     
   
     // @group printing and system configurations   
     
-    "print": LISP.Builtin(function(list, cont) {    
+    "print": LISP.Builtin(function(list, cont) {
+    
+      if(!(list instanceof LISP.Pair))
+        throw("print requires one argument, not " + list.to_s());
+          
       return LISP.Continuation(list.first(), cont.env, function(first_arg) {
         configs.console.log(first_arg.to_s());
         return cont(LISP.nil);
@@ -523,7 +521,7 @@ var Interpreter = (function() {
       
      return Helper(args, [], function(evaled_values) {
        
-       // convert array to lisp-list (reverted)         
+       // convert array to lisp-list (careverted)         
        var list = LISP.nil;
        
        for(var i=evaled_values.length-1;i>=0;i--)
@@ -601,7 +599,7 @@ var Interpreter = (function() {
       });
     }
          
-    return BindArgs(lambda.args, call_args, lambda_env, cont.env, function(bindings) {
+    return BindArgs(lambda.args, call_args, lambda_env, cont.env, function(bindings) {    
       return EvalMultiple(lambda.body, bindings, cont);
     });
   }

@@ -220,6 +220,8 @@
     test_interpreter("foo", "2");
     test_interpreter("(return 5)", "6");
     test_interpreter("foo", "10");    
+    
+    test_interpreter("(call/cc (lambda (k) k))", "<Continuation>");
   });
   
   test("Tail call optimization", function() {
