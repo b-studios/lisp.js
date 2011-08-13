@@ -27,7 +27,6 @@
   ; there is only one catch-block
   (if (eq? (cdr catch-blocks) nil)
     (let ( (catch-block (car catch-blocks)) )
-      ; try muss sich das äußere environment merken, um dort 'throw' aufzurufen, wenn die Exception nicht gefangen werden kann
       '(let ( (super-throw (if (defined? 'throw-exception) throw-exception (lambda (e) (error (+ "Not caught exception: " e)))))
               (exception nil) )
          (set! exception (call/cc (lambda (throw-exception) ,try-block)))
@@ -61,9 +60,10 @@
   (begin  
     (print "Inner")
     (try
-      (throw Exception)
-    (catch Exception
-      (print "Caught")))
+      (throw ExceptionOne)
+      
+    (catch ExceptionOne
+      (print "Caught ExceptionOne")))
   )
     
 (catch ExceptionTwo
