@@ -24,7 +24,7 @@ var Parser = function(string) {
   function read() {    
     // End of File
     if(scanner.peek() === undefined) 
-      throw("Unsuspected end of File at Position " + scanner.position());
+      throw("Unsuspected end of String at Position " + scanner.position());
     
     // Skip over Whitespaces
     scanner.skip();
@@ -137,7 +137,7 @@ var Parser = function(string) {
     else if(atom.match(/[^\s\(\)\,]+/))
       return new LISP.Symbol(atom);
       
-    else throw("Atom: Could not find right type for '"+ atom +"'");
+    else throw("Atom: Could not find right type for '"+ atom +"' at position:" + scanner.position());
   }
 
   return {

@@ -5,7 +5,8 @@ var StringScanner = function(string) {
   
   var WHITESPACES = ["\n","\t"," "];  
   
-  var pos = 0;
+  var pos = 0,
+      line = 1;
   
   // Private Helper Methods
   function matches(pattern) {
@@ -35,9 +36,13 @@ var StringScanner = function(string) {
       return string[pos + (amount || 0)];
     },   
      
-    next: function() {
-      if(pos < string.length)
+    next: function() {         
+      if(pos < string.length) {
+      
+        if(string[pos] == "\n") line++;
+      
         return string[pos++];
+      }
     },
     
     consume: function(character) {
@@ -64,7 +69,7 @@ var StringScanner = function(string) {
       else
         var args = WHITESPACES;
         
-      while(matches(args)) pos++;
+      while(matches(args)) scanner.next();
       
       return scanner;
     },
@@ -80,7 +85,7 @@ var StringScanner = function(string) {
     },
     
     position: function() {
-      return pos;
+      return "Charposition: " + pos + " Line: " + line;
     }
   };  
   

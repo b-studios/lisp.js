@@ -418,7 +418,7 @@ function trim(s) {
   return (s||"").replace(/^\s+|\s+$/g,"");
 }
 
-var ccCache = ["%", "*", "+", "-", "/", "and", "assert", "begin", "call/cc", "car", "cdr", "cons", "define", "defined?", "eq?", "error", "eval", "ge?", "get-bindings", "gt?", "if", "inspect", "lambda", "le?", "let", "lt?", "not", "or", "pair?", "print", "quote", "reset", "set!", "set-coop", "system", "typeof", "xor"];
+var ccCache = ["%", "*", "+", "-", "/", "and", "assert", "begin", "call/cc", "car", "cdr", "cons", "define", "defined?", "defmacro", "eq?", "error", "eval", "ge?", "get-bindings", "gt?", "if", "inspect", "join", "lambda", "le?", "let", "lt?", "macroexpand", "not", "or", "print", "quote", "reset", "set!", "set-coop", "split", "system", "to_s", "to_sym", "typeof", "xor"];
 var ccPosition = false;
 
 function getProps(cmd, filter) {

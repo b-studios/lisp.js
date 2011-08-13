@@ -21,7 +21,8 @@ var Interpreter = (function() {
          
     "assert": LISP.Builtin(function(list, cont) {
       return LISP.Continuation(list.first(), cont.env, function(value) {
-        if(value == LISP.True)
+      
+        if(!!value.value)
           return cont(LISP.nil);
         else
           return LISP.Continuation(list.second(), cont.env, function(msg) {
